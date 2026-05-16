@@ -13,6 +13,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
+import { AgriMindLogo } from "@/components/brand/agrimind-logo"
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -32,7 +33,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
         <SheetContent side="left" className="flex w-[min(100%,20rem)] flex-col gap-0 p-0">
           <SheetHeader className="border-b border-border px-4 py-4 text-left">
-            <SheetTitle className="text-lg">AgriMind AI</SheetTitle>
+            <SheetTitle className="sr-only">AgriMind AI menu</SheetTitle>
+            <AgriMindLogo size="sm" href="/dashboard" />
           </SheetHeader>
           <div className="flex-1 overflow-y-auto px-3 py-4">
             <DashboardNavList

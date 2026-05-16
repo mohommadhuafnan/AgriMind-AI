@@ -33,6 +33,16 @@ export const metadata: Metadata = {
     description:
       "An intelligent farming assistant available 24/7 for Sri Lankan farmers.",
     type: "website",
+    images: [{ url: "/agrimind-logo.png", alt: "AgriMind AI" }],
+  },
+  icons: {
+    icon: [
+      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-48.png", sizes: "48x48", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+    shortcut: "/favicon-32.png",
   },
 }
 

@@ -11,11 +11,11 @@ import {
   Bell,
   UserCog,
   Brain,
-  Shield,
   LogOut,
 } from "lucide-react"
 import { destroySession, signOutFirebase } from "@/services/auth.service"
 import { toast } from "sonner"
+import { AgriMindLogo } from "@/components/brand/agrimind-logo"
 
 const navItems = [
   { name: "Overview", href: "/admin", icon: LayoutDashboard },
@@ -42,14 +42,9 @@ export function AdminSidebar() {
   return (
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 border-r border-border bg-card lg:block">
       <div className="flex h-full flex-col">
-        <div className="flex h-16 items-center gap-2 border-b border-border px-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-destructive/10">
-            <Shield className="h-5 w-5 text-destructive" />
-          </div>
-          <div>
-            <p className="text-sm font-bold text-foreground">AgriMind</p>
-            <p className="text-xs text-muted-foreground">Admin Console</p>
-          </div>
+        <div className="flex h-16 flex-col justify-center gap-0.5 border-b border-border px-4">
+          <AgriMindLogo size="sm" iconOnly href="/" />
+          <p className="text-xs text-muted-foreground">Admin Console</p>
         </div>
 
         <nav className="flex-1 overflow-y-auto p-3">

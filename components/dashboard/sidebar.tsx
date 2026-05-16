@@ -14,7 +14,6 @@ import {
   Bell,
   Settings,
   User,
-  Leaf,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -30,6 +29,7 @@ import {
   type UiCatalogKey,
 } from "@/lib/i18n/ui-catalog"
 import { toast } from "sonner"
+import { AgriMindLogo } from "@/components/brand/agrimind-logo"
 
 const NAV_ICONS = {
   dashboard: LayoutDashboard,
@@ -75,19 +75,19 @@ export function DashboardSidebar() {
       <div className="flex h-full flex-col">
         <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border">
           {!collapsed && (
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
-                <Leaf className="h-4 w-4 text-sidebar-primary-foreground" />
-              </div>
-              <span className="text-lg font-bold text-sidebar-foreground">
-                {t("app.name")}
-              </span>
-            </Link>
+            <AgriMindLogo
+              size="sm"
+              href="/dashboard"
+              className="[&_span]:text-sidebar-foreground"
+            />
           )}
           {collapsed && (
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary mx-auto">
-              <Leaf className="h-4 w-4 text-sidebar-primary-foreground" />
-            </div>
+            <AgriMindLogo
+              size="sm"
+              iconOnly
+              href="/dashboard"
+              className="mx-auto"
+            />
           )}
         </div>
 

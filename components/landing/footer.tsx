@@ -1,7 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { Leaf, Facebook, Twitter, Instagram, Youtube, Mail, Phone, MapPin } from "lucide-react"
+import { Facebook, Twitter, Instagram, Youtube, Mail, Phone, MapPin } from "lucide-react"
+import { AgriMindLogo } from "@/components/brand/agrimind-logo"
 
 const footerLinks = {
   product: [
@@ -45,14 +46,10 @@ export function Footer() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 lg:gap-12">
             {/* Brand Column */}
             <div className="col-span-2 md:col-span-3 lg:col-span-2">
-              <Link href="/" className="flex items-center gap-2 mb-4">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sidebar-primary">
-                  <Leaf className="h-5 w-5 text-sidebar-primary-foreground" />
-                </div>
-                <span className="text-xl font-bold">
-                  Agri<span className="text-sidebar-primary">Mind</span> AI
-                </span>
-              </Link>
+              <AgriMindLogo
+                size="md"
+                className="mb-4 [&_span]:text-sidebar-foreground [&_.text-primary]:text-sidebar-primary"
+              />
               <p className="text-sidebar-foreground/70 mb-6 max-w-xs">
                 Your AI farming partner from seed to harvest. Empowering Sri Lankan 
                 farmers with intelligent agriculture technology.

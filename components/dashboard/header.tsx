@@ -1,6 +1,7 @@
 "use client"
 
 import { Menu } from "lucide-react"
+import { AgriMindLogo } from "@/components/brand/agrimind-logo"
 import { AnimatedSearchInput } from "@/components/dashboard/animated-search-input"
 import { NotificationDropdown } from "@/components/dashboard/notification-dropdown"
 import { DashboardProfileMenu } from "@/components/dashboard/dashboard-profile-menu"
@@ -41,8 +42,8 @@ export function DashboardHeader({ onOpenMobileMenu }: DashboardHeaderProps) {
         </div>
 
         <div className="min-w-0 flex-1 lg:hidden">
-          <p className="truncate text-sm font-semibold text-foreground">AgriMind AI</p>
-          <LiveDateTime variant="compact" className="!block text-left" />
+          <AgriMindLogo size="xs" iconOnly href="/dashboard" />
+          <LiveDateTime variant="compact" className="!mt-1 !block text-left" />
         </div>
 
         <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">

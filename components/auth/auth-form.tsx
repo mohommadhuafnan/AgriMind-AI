@@ -11,9 +11,9 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  Leaf,
   ArrowRight,
 } from "lucide-react"
+import { AgriMindLogo } from "@/components/brand/agrimind-logo"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -160,11 +160,11 @@ export function AuthForm({ mode, onModeChange, embedded = false }: AuthFormProps
         >
           <motion.div variants={fieldVariants} custom={0} className="mb-6 text-center md:text-left">
             <motion.div
-              className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/30"
-              whileHover={{ scale: 1.05, rotate: 3 }}
+              className="mb-3 inline-flex"
+              whileHover={{ scale: 1.05 }}
               transition={authSpring}
             >
-              <Leaf className="h-6 w-6 text-primary-foreground" />
+              <AgriMindLogo size="lg" iconOnly href={null} />
             </motion.div>
             <h2 className="text-2xl font-bold tracking-tight text-foreground">
               {mode === "login" ? "Welcome back" : "Join AgriMind AI"}

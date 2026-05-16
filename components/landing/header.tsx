@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
-import { Menu, X, Leaf, ChevronDown } from "lucide-react"
+import { Menu, X, ChevronDown } from "lucide-react"
+import { AgriMindLogo } from "@/components/brand/agrimind-logo"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle, ThemeToggleRow } from "@/components/layout/theme-toggle"
 import { LanguagePicker } from "@/components/i18n/language-picker"
@@ -43,14 +44,7 @@ export function Header() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-              <Leaf className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-foreground">
-              Agri<span className="text-primary">Mind</span> AI
-            </span>
-          </Link>
+          <AgriMindLogo size="md" priority />
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
