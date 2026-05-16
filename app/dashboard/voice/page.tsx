@@ -13,6 +13,7 @@ import {
   Zap,
   Loader2,
   Globe,
+  Square,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -265,7 +266,7 @@ export default function VoiceAssistantPage() {
   const statusText = isListening
     ? "Speak now — your words appear in the box as you talk"
     : isSpeaking
-      ? "Speaking…"
+      ? "AI is speaking — tap Stop voice below to interrupt"
       : isProcessing
         ? "Thinking…"
         : "Tap the microphone and ask your farming question"
@@ -367,6 +368,7 @@ export default function VoiceAssistantPage() {
                             setSpeakingId(message.id)
                             speak(message.content)
                           }}
+                          onStop={handleStopVoice}
                         />
                       )}
                     {message.transcript &&
@@ -399,6 +401,7 @@ export default function VoiceAssistantPage() {
               <VoiceMicButton
                 size="large"
                 isListening={isListening}
+                isSpeaking={isSpeaking}
                 isProcessing={isProcessing && !isListening}
                 audioLevel={audioLevel}
                 onClick={handleVoiceToggle}
@@ -407,6 +410,21 @@ export default function VoiceAssistantPage() {
               <p className="text-center text-sm font-medium text-muted-foreground">
                 {statusText}
               </p>
+
+              {isSpeaking && (
+                <div className="flex justify-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    className="gap-2 border-red-500/50 bg-red-500/10 text-red-600 shadow-sm hover:bg-red-500/20 dark:text-red-400"
+                    onClick={handleStopVoice}
+                  >
+                    <Square className="h-4 w-4 fill-current" />
+                    Stop voice
+                  </Button>
+                </div>
+              )}
 
               <div className="flex items-center justify-center gap-4">
                 <div className="flex items-center gap-2">
@@ -419,20 +437,34 @@ export default function VoiceAssistantPage() {
                     Realtime stream
                   </Label>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    setIsMuted(!isMuted)
-                    if (!isMuted) stopSpeaking()
-                  }}
-                >
-                  {isMuted ? (
-                    <VolumeX className="h-5 w-5" />
-                  ) : (
-                    <Volume2 className="h-5 w-5" />
-                  )}
-                </Button>
+                {isSpeaking ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="text-red-600 hover:bg-red-500/10 dark:text-red-400"
+                    onClick={handleStopVoice}
+                    aria-label="Stop voice"
+                  >
+                    <Square className="h-5 w-5 fill-current" />
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setIsMuted(!isMuted)
+                      if (!isMuted) handleStopVoice()
+                    }}
+                    aria-label={isMuted ? "Unmute replies" : "Mute replies"}
+                  >
+                    {isMuted ? (
+                      <VolumeX className="h-5 w-5" />
+                    ) : (
+                      <Volume2 className="h-5 w-5" />
+                    )}
+                  </Button>
+                )}
               </div>
 
               <div className="flex gap-2">

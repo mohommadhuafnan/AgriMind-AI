@@ -1,6 +1,6 @@
 "use client"
 
-import { Volume2, Copy, Check } from "lucide-react"
+import { Volume2, Copy, Check, Square } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -8,12 +8,14 @@ import { toast } from "sonner"
 interface VoiceMessageActionsProps {
   content: string
   onSpeak: () => void
+  onStop?: () => void
   isSpeaking?: boolean
 }
 
 export function VoiceMessageActions({
   content,
   onSpeak,
+  onStop,
   isSpeaking,
 }: VoiceMessageActionsProps) {
   const [copied, setCopied] = useState(false)
@@ -26,18 +28,30 @@ export function VoiceMessageActions({
   }
 
   return (
-    <div className="mt-2 flex gap-1">
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="h-7 gap-1 px-2 text-xs"
-        onClick={onSpeak}
-        disabled={isSpeaking}
-      >
-        <Volume2 className="h-3.5 w-3.5" />
-        {isSpeaking ? "Playing…" : "Listen"}
-      </Button>
+    <div className="mt-2 flex flex-wrap gap-1">
+      {isSpeaking ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-7 gap-1 border-red-500/40 bg-red-500/10 px-2 text-xs text-red-600 hover:bg-red-500/20 dark:text-red-400"
+          onClick={onStop}
+        >
+          <Square className="h-3.5 w-3.5 fill-current" />
+          Stop
+        </Button>
+      ) : (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 gap-1 px-2 text-xs"
+          onClick={onSpeak}
+        >
+          <Volume2 className="h-3.5 w-3.5" />
+          Listen
+        </Button>
+      )}
       <Button
         type="button"
         variant="ghost"
