@@ -123,6 +123,9 @@ export const UI_CATALOG = {
   "landing.signIn": "Sign In",
 
   "landing.getStarted": "Get Started",
+  "dashboard.greetingMorning": "Good morning",
+  "dashboard.greetingAfternoon": "Good afternoon",
+  "dashboard.greetingEvening": "Good evening",
   "dashboard.welcomeSubtitle": "Your AI-powered farm overview — live data from MongoDB.",
   "dashboard.scanCrop.title": "Scan Crop",
   "dashboard.scanCrop.desc":

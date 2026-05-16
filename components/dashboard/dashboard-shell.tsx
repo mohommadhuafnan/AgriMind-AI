@@ -22,7 +22,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <DashboardSidebar />
       <div className="flex min-h-screen flex-col transition-all duration-300 lg:pl-64">
         <DashboardHeader onOpenMobileMenu={() => setMenuOpen(true)} />
-        <main className="flex-1 p-4 pb-24 sm:p-6 lg:pb-6">{children}</main>
+        <main className="flex-1 p-4 pb-24 sm:p-6 lg:pb-6">
+          <div className="mx-auto w-full max-w-[1440px]">{children}</div>
+        </main>
       </div>
 
       <DashboardMobileNav onOpenMenu={() => setMenuOpen(true)} />

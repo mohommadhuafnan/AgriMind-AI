@@ -115,6 +115,9 @@ const SI: StaticMap = {
   "crops.stage.fruiting": "ගෙඩි",
 
   "crops.stage.harvesting": "අස්වැන්න",
+  "dashboard.greetingMorning": "සුභ උදෑසනක්",
+  "dashboard.greetingAfternoon": "සුභ දහවලක්",
+  "dashboard.greetingEvening": "සුභ සන්ධ්‍යාවක්",
   "dashboard.welcomeSubtitle": "ඔබේ AI ගොවිතැන් දළ විශ්ලේෂණය — MongoDB වෙතින් සජීව දත්ත.",
   "dashboard.scanCrop.title": "බෝගය ස්කෑන් කරන්න",
   "dashboard.scanCrop.desc":
@@ -243,6 +246,9 @@ const TA: StaticMap = {
   "crops.stage.fruiting": "கனி",
 
   "crops.stage.harvesting": "அறுவடை",
+  "dashboard.greetingMorning": "காலை வணக்கம்",
+  "dashboard.greetingAfternoon": "மதிய வணக்கம்",
+  "dashboard.greetingEvening": "மாலை வணக்கம்",
   "dashboard.welcomeSubtitle": "உங்கள் AI விவசாய கண்ணோட்டம் — MongoDB இலிருந்து நேரடி தரவு.",
   "dashboard.scanCrop.title": "பயிரை ஸ்கேன் செய்",
   "dashboard.scanCrop.desc":

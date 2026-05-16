@@ -21,7 +21,9 @@ import {
   DiagnosisActivityChart,
 } from "@/components/dashboard/charts/dashboard-charts"
 import { DashboardPrimaryActions } from "@/components/dashboard/dashboard-primary-actions"
+import { LiveDateTime } from "@/components/dashboard/live-datetime"
 import { useLanguage } from "@/contexts/language-context"
+import { getGreetingKey } from "@/lib/datetime/greeting"
 import { formatDistanceToNow } from "date-fns"
 
 export default function DashboardPage() {
@@ -83,12 +85,17 @@ export default function DashboardPage() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="space-y-1"
+        className="flex flex-col gap-4 rounded-2xl border border-border bg-gradient-to-br from-primary/5 via-background to-background p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
       >
-        <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
-          Welcome back, {firstName}!
-        </h1>
-        <p className="text-muted-foreground">{t("dashboard.welcomeSubtitle")}</p>
+        <div className="min-w-0 space-y-1">
+          <h1 className="text-xl font-bold text-foreground sm:text-2xl lg:text-3xl">
+            {t(getGreetingKey())}, {firstName}!
+          </h1>
+          <p className="text-sm text-muted-foreground sm:text-base">
+            {t("dashboard.welcomeSubtitle")}
+          </p>
+        </div>
+        <LiveDateTime variant="card" className="w-full shrink-0 sm:w-auto" />
       </motion.div>
 
       <DashboardPrimaryActions />
