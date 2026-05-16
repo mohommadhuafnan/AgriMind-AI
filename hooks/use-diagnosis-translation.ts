@@ -12,13 +12,14 @@ function collectTexts(d: CropDiagnosisResult): string[] {
     d.rejectionReason ?? "",
     d.estimatedRecovery,
     d.costEstimate,
+    d.recoverySummary ?? "",
     d.irrigationNotes ?? "",
     d.followUpAdvice ?? "",
     ...d.symptoms,
     ...d.prevention,
     ...(d.nutrients ?? []),
     ...(d.pests ?? []),
-    ...d.treatment.flatMap((t) => [t.action, t.timing]),
+    ...d.treatment.flatMap((t) => [t.action, t.timing, t.details ?? ""]),
     ...(d.youtubeVideos ?? []).map((v) => v.title),
   ]
   return texts.filter(Boolean)
@@ -44,6 +45,9 @@ function applyTranslations(
       : undefined,
     estimatedRecovery: tr(source.estimatedRecovery),
     costEstimate: tr(source.costEstimate),
+    recoverySummary: source.recoverySummary
+      ? tr(source.recoverySummary)
+      : undefined,
     irrigationNotes: source.irrigationNotes
       ? tr(source.irrigationNotes)
       : undefined,
@@ -58,6 +62,7 @@ function applyTranslations(
       ...step,
       action: tr(step.action),
       timing: tr(step.timing),
+      details: step.details ? tr(step.details) : undefined,
     })),
     youtubeVideos: source.youtubeVideos?.map((v) => ({
       ...v,

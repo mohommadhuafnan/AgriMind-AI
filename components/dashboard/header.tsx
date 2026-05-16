@@ -10,9 +10,27 @@ import { LanguagePicker } from "@/components/i18n/language-picker"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { useLanguage } from "@/contexts/language-context"
+import { cn } from "@/lib/utils"
 
 type DashboardHeaderProps = {
   onOpenMobileMenu?: () => void
+}
+
+function HeaderActions({ compact = false }: { compact?: boolean }) {
+  return (
+    <div
+      className={cn("flex shrink-0 items-center", compact ? "gap-0.5" : "gap-1")}
+    >
+      {!compact && (
+        <div className="hidden sm:block">
+          <LanguagePicker />
+        </div>
+      )}
+      <ThemeToggle />
+      <NotificationDropdown />
+      <DashboardProfileMenu />
+    </div>
+  )
 }
 
 export function DashboardHeader({ onOpenMobileMenu }: DashboardHeaderProps) {
@@ -22,38 +40,43 @@ export function DashboardHeader({ onOpenMobileMenu }: DashboardHeaderProps) {
     <header
       key={language}
       data-no-translate
-      className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+      className="sticky top-0 z-30 border-b border-border bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-background/80"
     >
-      <div className="mx-auto flex h-14 max-w-[1440px] items-center gap-3 px-3 sm:h-16 sm:gap-4 sm:px-5 lg:px-6">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="shrink-0 lg:hidden"
-          onClick={onOpenMobileMenu}
-          aria-label="Open navigation menu"
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
+      <div className="lg:hidden">
+        <div className="flex h-12 items-center gap-2 px-3">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 shrink-0"
+            onClick={onOpenMobileMenu}
+            aria-label="Open navigation menu"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
 
-        <div className="hidden min-w-0 flex-1 items-center gap-4 lg:flex">
-          <LiveDateTime variant="compact" className="shrink-0 border-r border-border pr-4" />
-          <AnimatedSearchInput className="max-w-lg flex-1" />
+          <AgriMindLogo
+            size="xs"
+            href="/dashboard"
+            className="min-w-0 flex-1 [&_span]:truncate [&_span]:text-sm"
+            imageClassName="!h-8 !w-8"
+          />
+
+          <HeaderActions compact />
         </div>
 
-        <div className="min-w-0 flex-1 lg:hidden">
-          <AgriMindLogo size="sm" iconOnly href="/dashboard" />
-          <LiveDateTime variant="compact" className="!mt-1 !block text-left" />
+        <div className="border-t border-border/60 bg-muted/25 px-3 py-2">
+          <LiveDateTime variant="mobile-bar" />
         </div>
+      </div>
 
-        <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
-          <div className="hidden sm:block">
-            <LanguagePicker />
-          </div>
-          <ThemeToggle />
-          <NotificationDropdown />
-          <DashboardProfileMenu />
-        </div>
+      <div className="mx-auto hidden h-16 max-w-[1440px] items-center gap-4 px-6 lg:flex">
+        <LiveDateTime
+          variant="compact"
+          className="shrink-0 border-r border-border pr-4"
+        />
+        <AnimatedSearchInput className="max-w-lg flex-1" />
+        <HeaderActions />
       </div>
     </header>
   )

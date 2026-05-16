@@ -160,11 +160,13 @@ export function DiagnosisResultsPanel({
                 <CardTitle className="text-lg">{t("diagnosis.symptoms")}</CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-2">
+                <ul className="space-y-4">
                   {report.symptoms.map((symptom, index) => (
-                    <li key={index} className="flex items-start gap-2">
+                    <li key={index} className="flex items-start gap-3">
                       <CheckCircle className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-                      <span className="text-foreground">{symptom}</span>
+                      <p className="text-sm leading-relaxed text-foreground">
+                        {symptom}
+                      </p>
                     </li>
                   ))}
                 </ul>
@@ -179,20 +181,28 @@ export function DiagnosisResultsPanel({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {report.treatment.map((step) => (
-                    <div key={step.step} className="flex gap-4">
-                      <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center shrink-0">
+                    <div
+                      key={step.step}
+                      className="flex gap-4 rounded-xl border border-border/60 bg-muted/20 p-4"
+                    >
+                      <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center shrink-0">
                         <span className="text-sm font-bold text-primary-foreground">
                           {step.step}
                         </span>
                       </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-foreground">{step.action}</p>
-                        <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                          <Clock className="h-3.5 w-3.5" />
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <p className="font-semibold text-foreground">{step.action}</p>
+                        <p className="text-sm font-medium text-primary flex items-center gap-1.5">
+                          <Clock className="h-3.5 w-3.5 shrink-0" />
                           {step.timing}
                         </p>
+                        {step.details ? (
+                          <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
+                            {step.details}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                   ))}
@@ -205,13 +215,16 @@ export function DiagnosisResultsPanel({
                 <CardTitle className="text-lg">{t("diagnosis.prevention")}</CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-2">
+                <ul className="space-y-4">
                   {report.prevention.map((tip, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                        <span className="text-xs font-medium text-primary">{index + 1}</span>
+                    <li
+                      key={index}
+                      className="flex items-start gap-3 rounded-lg border border-border/40 bg-muted/15 p-3"
+                    >
+                      <div className="h-6 w-6 rounded-full bg-primary/15 flex items-center justify-center shrink-0 mt-0.5">
+                        <span className="text-xs font-semibold text-primary">{index + 1}</span>
                       </div>
-                      <span className="text-foreground">{tip}</span>
+                      <p className="text-sm leading-relaxed text-foreground">{tip}</p>
                     </li>
                   ))}
                 </ul>
@@ -225,18 +238,52 @@ export function DiagnosisResultsPanel({
                 <CardTitle className="text-lg">{t("diagnosis.recovery")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="p-3 rounded-lg bg-muted/50">
-                  <p className="text-sm text-muted-foreground">
+                <div className="rounded-lg border border-border/50 bg-muted/30 p-4 space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">
                     {t("diagnosis.estimatedRecovery")}
                   </p>
-                  <p className="font-medium text-foreground">{report.estimatedRecovery}</p>
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">
+                    {report.estimatedRecovery}
+                  </p>
                 </div>
-                <div className="p-3 rounded-lg bg-muted/50">
-                  <p className="text-sm text-muted-foreground">
+                <div className="rounded-lg border border-border/50 bg-muted/30 p-4 space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">
                     {t("diagnosis.treatmentCost")}
                   </p>
-                  <p className="font-medium text-foreground">{report.costEstimate}</p>
+                  <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">
+                    {report.costEstimate}
+                  </p>
                 </div>
+                {report.recoverySummary ? (
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2">
+                    <p className="text-sm font-medium text-primary">
+                      {t("diagnosis.recoveryOutlook")}
+                    </p>
+                    <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">
+                      {report.recoverySummary}
+                    </p>
+                  </div>
+                ) : null}
+                {report.irrigationNotes ? (
+                  <div className="rounded-lg border border-border/50 bg-muted/20 p-4 space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {t("diagnosis.irrigation")}
+                    </p>
+                    <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">
+                      {report.irrigationNotes}
+                    </p>
+                  </div>
+                ) : null}
+                {report.followUpAdvice ? (
+                  <div className="rounded-lg border border-amber-500/25 bg-amber-500/5 p-4 space-y-2">
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                      {t("diagnosis.followUp")}
+                    </p>
+                    <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">
+                      {report.followUpAdvice}
+                    </p>
+                  </div>
+                ) : null}
               </CardContent>
             </Card>
 

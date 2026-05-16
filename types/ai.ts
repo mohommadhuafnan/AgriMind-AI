@@ -20,6 +20,8 @@ export interface DiagnosisTreatmentStep {
   step: number
   action: string
   timing: string
+  /** Detailed how-to from OpenAI (products, dosage, application) */
+  details?: string
 }
 
 export interface DiagnosisYoutubeVideo {
@@ -43,6 +45,8 @@ export interface CropDiagnosisResult {
   prevention: string[]
   estimatedRecovery: string
   costEstimate: string
+  /** Week-by-week recovery expectations from OpenAI */
+  recoverySummary?: string
   nutrients?: string[]
   pests?: string[]
   irrigationNotes?: string

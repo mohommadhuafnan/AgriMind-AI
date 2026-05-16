@@ -64,13 +64,26 @@ export function generateDiagnosisPdf(input: DiagnosisPdfInput): Buffer {
   d.symptoms.forEach((s) => line(`• ${s}`))
 
   line("Treatment plan", 12, true)
-  d.treatment.forEach((t) => line(`${t.step}. ${t.action} (${t.timing})`))
+  d.treatment.forEach((t) => {
+    line(`${t.step}. ${t.action} (${t.timing})`, 11, true)
+    if (t.details) line(t.details)
+  })
 
   line("Prevention", 12, true)
   d.prevention.forEach((p) => line(`• ${p}`))
 
-  line(`Recovery: ${d.estimatedRecovery}`)
-  line(`Estimated cost: ${d.costEstimate}`)
+  line("Estimated recovery", 12, true)
+  line(d.estimatedRecovery)
+  line("Estimated cost (LKR)", 12, true)
+  line(d.costEstimate)
+  if (d.recoverySummary) {
+    line("Recovery outlook", 12, true)
+    line(d.recoverySummary)
+  }
+  if (d.irrigationNotes) {
+    line("Irrigation notes", 12, true)
+    line(d.irrigationNotes)
+  }
   if (d.followUpAdvice) {
     line("Follow-up", 12, true)
     line(d.followUpAdvice)

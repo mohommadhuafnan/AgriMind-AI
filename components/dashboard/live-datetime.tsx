@@ -6,12 +6,42 @@ import { useLiveClock } from "@/hooks/use-live-clock"
 import { cn } from "@/lib/utils"
 
 type LiveDateTimeProps = {
-  variant?: "compact" | "card"
+  variant?: "compact" | "card" | "mobile-bar"
   className?: string
 }
 
 export function LiveDateTime({ variant = "compact", className }: LiveDateTimeProps) {
   const { time, dateLabel, shortDate } = useLiveClock()
+
+  if (variant === "mobile-bar") {
+    return (
+      <div
+        className={cn(
+          "flex w-full items-center justify-between gap-2 text-xs",
+          className
+        )}
+        data-no-translate
+      >
+        <motion.div
+          className="flex min-w-0 items-center gap-2"
+          key={time}
+          initial={{ opacity: 0.7 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2 }}
+        >
+          <Clock className="h-3.5 w-3.5 shrink-0 text-primary" />
+          <span className="truncate font-semibold tabular-nums text-foreground">
+            {time}
+          </span>
+          <span className="shrink-0 text-muted-foreground">·</span>
+          <span className="truncate text-muted-foreground">{shortDate}</span>
+        </motion.div>
+        <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-primary/70">
+          GMT+5:30
+        </span>
+      </div>
+    )
+  }
 
   if (variant === "card") {
     return (

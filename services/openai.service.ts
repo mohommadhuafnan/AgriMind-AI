@@ -197,9 +197,9 @@ export async function analyzeCropImage(params: {
 
     "First verify this is a real plant/crop photo. If not, set isValidPlantImage false.",
 
-    "If valid, analyze visible disease, pest, or nutrient issues.",
+    "If valid, write an EXPERT-LEVEL report for a Sri Lankan farmer: long cause analysis, 5+ detailed symptoms, 4+ treatment steps each with a 'details' paragraph (products, LKR costs, dosage), 5+ prevention paragraphs, and rich recoverySummary + estimatedRecovery + costEstimate.",
 
-    "Return complete JSON including isValidPlantImage.",
+    "Do not use short placeholders. Return complete JSON only.",
 
   ]
 
@@ -209,53 +209,55 @@ export async function analyzeCropImage(params: {
 
 
 
-  const completion = await openai.chat.completions.create({
+  const runVision = async (extraInstruction?: string) => {
+    const completion = await openai.chat.completions.create({
+      model: openaiConfig.visionModel,
+      max_tokens: 4096,
+      temperature: 0.25,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: getDiagnosisSystemPrompt(params.language) },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: extraInstruction
+                ? `${userText}\n\nIMPORTANT: ${extraInstruction}`
+                : userText,
+            },
+            {
+              type: "image_url",
+              image_url: { url: visionImageUrl, detail: "high" },
+            },
+          ],
+        },
+      ],
+    })
 
-    model: openaiConfig.visionModel,
-
-    max_tokens: 2500,
-
-    temperature: 0.2,
-
-    response_format: { type: "json_object" },
-
-    messages: [
-
-      { role: "system", content: getDiagnosisSystemPrompt(params.language) },
-
-      {
-
-        role: "user",
-
-        content: [
-
-          { type: "text", text: userText },
-
-          { type: "image_url", image_url: { url: visionImageUrl, detail: "high" } },
-
-        ],
-
-      },
-
-    ],
-
-  })
-
-
-
-  const raw = completion.choices[0]?.message?.content
-
-  if (!raw) {
-
-    throw new Error("OpenAI vision returned an empty response")
-
+    const raw = completion.choices[0]?.message?.content
+    if (!raw) {
+      throw new Error("OpenAI vision returned an empty response")
+    }
+    return parseJsonFromModel(raw)
   }
 
+  let parsed: unknown
+  let normalized: ReturnType<typeof normalizeDiagnosisPayload>
 
+  try {
+    parsed = await runVision()
+    normalized = normalizeDiagnosisPayload(parsed, params.cropType)
+  } catch (err) {
+    const isIncomplete =
+      err instanceof Error && err.name === "DiagnosisIncompleteError"
+    if (!isIncomplete) throw err
 
-  const parsed = parseJsonFromModel(raw)
-
-  const normalized = normalizeDiagnosisPayload(parsed, params.cropType)
+    parsed = await runVision(
+      "Your previous JSON was incomplete. Fill EVERY required field with long, specific paragraphs. Minimum: 5 symptoms, 4 treatment steps with 4+ sentence details each, 5 prevention tips, recoverySummary, estimatedRecovery, costEstimate — all in the farmer's language."
+    )
+    normalized = normalizeDiagnosisPayload(parsed, params.cropType)
+  }
 
 
 
@@ -286,6 +288,8 @@ export async function analyzeCropImage(params: {
     estimatedRecovery: normalized.estimatedRecovery,
 
     costEstimate: normalized.costEstimate,
+
+    recoverySummary: normalized.recoverySummary,
 
     nutrients: normalized.nutrients?.length ? normalized.nutrients : undefined,
 

@@ -69,32 +69,48 @@ STEP 2 — PLANT DIAGNOSIS (only if isValidPlantImage is true):
   "disease": "specific disease or issue name",
   "confidence": 65,
   "severity": "low|medium|high",
-  "cause": "5-8 detailed sentences in ${langNote}: pathogen/pest/nutrient cause, how it spreads, weather/field factors, why it matches visible signs, Sri Lankan context (Maha/Yala)",
-  "symptoms": ["at least 4 specific visible symptoms from the photo"],
-  "treatment": [
-    { "step": 1, "action": "specific action", "timing": "when" },
-    { "step": 2, "action": "...", "timing": "..." },
-    { "step": 3, "action": "...", "timing": "..." }
+  "cause": "8-12 detailed sentences in ${langNote}: pathogen/pest/nutrient cause, life cycle, how it spreads in Sri Lankan fields, weather (Maha/Yala), why signs match this photo, risk to yield",
+  "symptoms": [
+    "5-7 items. Each item = 2-3 full sentences describing ONE visible sign the farmer can check on leaves/stems/fruit. Be specific to the photo — colors, shapes, patterns, spread."
   ],
-  "prevention": ["at least 4 prevention tips"],
-  "estimatedRecovery": "e.g. 2-3 weeks",
-  "costEstimate": "e.g. Rs. 3,000-6,000 in LKR",
-  "nutrients": ["optional"],
-  "pests": ["optional"],
-  "irrigationNotes": "optional",
-  "followUpAdvice": "supportive paragraph in ${langNote}",
+  "treatment": [
+    {
+      "step": 1,
+      "action": "Short action title (one line)",
+      "timing": "When to apply (e.g. immediately, within 48h, every 7 days)",
+      "details": "4-6 sentences: exact steps, recommended products available in Sri Lanka (fungicide/organic names), dosage per acre or per plant, mixing/safety, what to avoid"
+    }
+  ],
+  "prevention": [
+    "5-6 items. Each item = 2-4 sentences with practical prevention for Sri Lankan smallholders — crop rotation, spacing, sanitation, resistant varieties, scouting schedule"
+  ],
+  "estimatedRecovery": "3-5 sentences: realistic timeline (days/weeks), stages of improvement, factors that speed or delay recovery",
+  "costEstimate": "3-5 sentences: itemized estimated cost in LKR (labour, chemicals, organic options), low vs high budget scenarios",
+  "recoverySummary": "4-6 sentences: what farmer should expect week 1, week 2, when to re-check, warning signs that need officer help",
+  "nutrients": ["optional deficiency notes if relevant"],
+  "pests": ["optional related pests"],
+  "irrigationNotes": "2-4 sentences on water management for this issue, or empty string if N/A",
+  "followUpAdvice": "4-6 supportive sentences: monitoring, re-photo timing, when to call agriculture office",
   "youtubeVideos": [
-    { "title": "...", "searchQuery": "English YouTube search", "language": "English" },
-    { "title": "...", "searchQuery": "Sinhala Sri Lanka farming", "language": "සිංහල" },
-    { "title": "...", "searchQuery": "organic treatment crop", "language": "English" }
+    { "title": "descriptive title", "searchQuery": "specific English YouTube search", "language": "English" },
+    { "title": "...", "searchQuery": "Sinhala Sri Lanka crop treatment", "language": "සිංහල" },
+    { "title": "...", "searchQuery": "organic disease control farming", "language": "English" }
   ]
 }
 
+MANDATORY COUNTS (valid plant only — never leave empty or use placeholders):
+- symptoms: minimum 5 detailed entries
+- treatment: minimum 4 steps, each with non-empty action, timing, and details (details at least 4 sentences)
+- prevention: minimum 5 detailed entries
+- estimatedRecovery, costEstimate, recoverySummary: each non-empty, multi-sentence paragraphs
+- cause: minimum 8 sentences
+
 RULES:
-- Farmer's crop type is a hint — diagnose what you actually see.
+- Farmer's crop type is a hint — diagnose what you actually see in the image.
 - confidence 40-98 for valid plants; 0 only for rejected images.
-- All farmer-facing text (cause, symptoms, treatment, prevention, followUpAdvice, rejectionReason) MUST be in ${langNote}.
-- Return ONLY valid JSON, no markdown.
+- NEVER use generic filler like "monitor plants" without explanation. Every field must be tailored to this disease and crop.
+- All farmer-facing text MUST be in ${langNote}.
+- Return ONLY valid JSON, no markdown fences.
 Common crops: ${SUPPORTED_CROPS.join(", ")}.`
 }
 
