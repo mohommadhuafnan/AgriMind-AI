@@ -30,7 +30,7 @@ import {
   useVoiceAssistant,
   type VoiceUiMessage,
 } from "@/hooks/use-voice-assistant"
-import { useRealtimeSpeechInput } from "@/hooks/use-realtime-speech-input"
+import { useVoiceInput } from "@/hooks/use-voice-input"
 import { useVoiceConversations } from "@/hooks/use-voice-conversations"
 import { VoiceMicButton } from "@/components/dashboard/voice/voice-mic-button"
 import { VoiceMessageActions } from "@/components/dashboard/voice/voice-message-actions"
@@ -78,6 +78,7 @@ export default function VoiceAssistantPage() {
   ])
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const assistantIdRef = useRef<string | null>(null)
 
   const {
@@ -95,10 +96,11 @@ export default function VoiceAssistantPage() {
 
   const {
     isListening,
-    isSupported: isLiveSpeechSupported,
-    start: startLiveSpeech,
-    stop: stopLiveSpeech,
-  } = useRealtimeSpeechInput(language)
+    isTranscribing,
+    isLiveTypingSupported,
+    startListening,
+    stopListening,
+  } = useVoiceInput(language)
 
   const { conversations, loading: historyLoading, refresh, remove } =
     useVoiceConversations()
@@ -147,7 +149,13 @@ export default function VoiceAssistantPage() {
     }
   }
 
+  const handleStopVoice = () => {
+    stopSpeaking()
+    setSpeakingId(null)
+  }
+
   const runTurn = async (userText: string, transcript?: string) => {
+    handleStopVoice()
     setFollowUps([])
     const userMsg: VoiceUiMessage = {
       id: `u-${Date.now()}`,
@@ -205,24 +213,46 @@ export default function VoiceAssistantPage() {
   }
 
   const handleVoiceToggle = async () => {
+    if (isProcessing && !isListening) return
+
+    if (isSpeaking) {
+      handleStopVoice()
+    }
+
     if (isListening) {
-      const text = await stopLiveSpeech()
-      if (text) {
-        setTextInput(text)
-        await runTurn(text, text)
-      }
-    } else {
-      stopSpeaking()
-      await startLiveSpeech({
-        initialText: textInput,
-        onTextChange: setTextInput,
+      const text = await stopListening()
+      if (text) setTextInput(text)
+      textareaRef.current?.focus()
+      toast.message("Your words are in the box — edit if needed, then tap Send", {
+        duration: 3500,
+      })
+      return
+    }
+
+    handleStopVoice()
+    await startListening({
+      initialText: textInput,
+      onTextChange: setTextInput,
+    })
+    textareaRef.current?.focus()
+    if (!isLiveTypingSupported) {
+      toast.message("Recording… tap the mic again when finished speaking", {
+        duration: 3000,
       })
     }
   }
 
   const handleTextSubmit = async () => {
-    if (!textInput.trim() || isProcessing) return
-    const text = textInput.trim()
+    if (isProcessing) return
+
+    let text = textInput.trim()
+    if (isListening) {
+      const heard = (await stopListening())?.trim()
+      if (heard) text = heard
+      else text = textInput.trim()
+    }
+    if (!text) return
+
     setTextInput("")
     await runTurn(text)
   }
@@ -250,6 +280,8 @@ export default function VoiceAssistantPage() {
   }
 
   const handleNewChat = () => {
+    if (isListening) void stopListening()
+    handleStopVoice()
     startNewConversation()
     setFollowUps([])
     setMessages([
@@ -263,13 +295,17 @@ export default function VoiceAssistantPage() {
     setShowHistory(false)
   }
 
-  const statusText = isListening
-    ? "Speak now — your words appear in the box as you talk"
-    : isSpeaking
-      ? "AI is speaking — tap Stop voice below to interrupt"
-      : isProcessing
-        ? "Thinking…"
-        : "Tap the microphone and ask your farming question"
+  const statusText = isTranscribing
+    ? "Transcribing your voice…"
+    : isListening
+      ? isLiveTypingSupported
+        ? "Listening — your words type live in the box below"
+        : "Recording — tap the green button again when done"
+      : isSpeaking
+        ? "AI voice playing — tap Stop voice to interrupt"
+        : isProcessing
+          ? "AgriMind is thinking… voice plays when the answer is ready"
+          : "Tap the green mic to speak, or type below and press Send"
 
   return (
     <motion.div className="-m-6 flex min-h-[calc(100dvh-4rem)] w-[calc(100%+3rem)] flex-col">
@@ -279,9 +315,9 @@ export default function VoiceAssistantPage() {
           <div className="mb-2 flex flex-wrap gap-2">
             <Badge variant="secondary" className="gap-1">
               <Sparkles className="h-3 w-3" />
-              {isLiveSpeechSupported
+              {isLiveTypingSupported
                 ? "Live speech → text"
-                : "Voice STT + OpenAI TTS"}
+                : "VALSEA voice → text"}
             </Badge>
             <Badge variant="outline" className="gap-1 border-primary/30 text-primary">
               <Globe className="h-3 w-3" />
@@ -400,9 +436,9 @@ export default function VoiceAssistantPage() {
           <div className="mx-auto w-full max-w-4xl space-y-5">
               <VoiceMicButton
                 size="large"
-                isListening={isListening}
+                isListening={isListening || isTranscribing}
                 isSpeaking={isSpeaking}
-                isProcessing={isProcessing && !isListening}
+                isProcessing={isProcessing && !isListening && !isTranscribing}
                 audioLevel={audioLevel}
                 onClick={handleVoiceToggle}
               />
@@ -469,28 +505,47 @@ export default function VoiceAssistantPage() {
 
               <div className="flex gap-2">
                 <Textarea
+                  ref={textareaRef}
                   value={textInput}
                   onChange={(e) => setTextInput(e.target.value)}
                   placeholder={
                     isListening
-                      ? "Listening… speak and watch words appear here"
-                      : "Type or tap the microphone to speak…"
+                      ? isLiveTypingSupported
+                        ? "Speak now — words appear here as you talk…"
+                        : "Recording… tap mic again when finished"
+                      : isProcessing
+                        ? "Waiting for AI answer…"
+                        : "Type your question or use the microphone above…"
                   }
-                  rows={2}
-                  className={`resize-none ${isListening ? "ring-2 ring-primary/40" : ""}`}
+                  rows={3}
+                  disabled={isProcessing && !isListening}
+                  className={`min-h-[88px] resize-none text-base ${
+                    isListening
+                      ? "border-primary ring-2 ring-primary/30 bg-primary/5"
+                      : ""
+                  }`}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault()
-                      handleTextSubmit()
+                      void handleTextSubmit()
                     }
                   }}
                 />
                 <Button
-                  onClick={handleTextSubmit}
-                  disabled={!textInput.trim() || isProcessing}
-                  className="self-end"
+                  onClick={() => void handleTextSubmit()}
+                  disabled={
+                    isProcessing ||
+                    isTranscribing ||
+                    (!textInput.trim() && !isListening)
+                  }
+                  className="self-end shrink-0"
+                  title="Send message"
                 >
-                  <Send className="h-4 w-4" />
+                  {isListening ? (
+                    <span className="text-xs font-medium">Send</span>
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
 
