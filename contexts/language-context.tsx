@@ -40,6 +40,8 @@ interface LanguageContextValue {
   t: (key: UiCatalogKey) => string
   translateTexts: (texts: string[]) => Promise<string[]>
   isTranslating: boolean
+  isPageTranslating: boolean
+  setPageTranslating: (value: boolean) => void
   languageGroups: ReturnType<typeof getLanguagesByRegion>
 }
 
@@ -49,22 +51,31 @@ async function fetchBatchTranslations(
   texts: string[],
   target: SupportedLanguage
 ): Promise<string[]> {
-  const res = await fetch("/api/valsea/translate-batch", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ texts, target, source: "auto" }),
-  })
-  const json = await res.json()
-  if (!res.ok) {
-    const msg = json.error ?? "Translation failed"
-    if (res.status === 503) {
-      throw new Error(
-        `${msg} Restart \`npm run dev\` after updating .env.local.`
-      )
+  const CHUNK = 35
+  const out: string[] = []
+
+  for (let i = 0; i < texts.length; i += CHUNK) {
+    const chunk = texts.slice(i, i + CHUNK)
+    const res = await fetch("/api/valsea/translate-batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texts: chunk, target, source: "en" }),
+    })
+    const json = await res.json()
+    if (!res.ok) {
+      const msg = json.error ?? "Translation failed"
+      if (res.status === 503) {
+        throw new Error(
+          `${msg} Restart \`npm run dev\` after updating .env.local and Vercel env.`
+        )
+      }
+      throw new Error(msg)
     }
-    throw new Error(msg)
+    const part = (json.data?.translations as string[]) ?? chunk
+    out.push(...part)
   }
-  return (json.data?.translations as string[]) ?? texts
+
+  return out
 }
 
 export function LanguageProvider({
@@ -79,6 +90,7 @@ export function LanguageProvider({
   )
   const [map, setMap] = useState<TranslationMap>({})
   const [isTranslating, setIsTranslating] = useState(false)
+  const [isPageTranslating, setPageTranslating] = useState(false)
   const languageGroups = useMemo(() => getLanguagesByRegion(), [])
 
   const loadCatalog = useCallback(async (lang: SupportedLanguage) => {
@@ -129,7 +141,11 @@ export function LanguageProvider({
   useEffect(() => {
     const stored = getStoredLanguage()
     setLanguageState(stored)
-    void loadCatalog(stored)
+    void loadCatalog(stored).then(() => {
+      if (stored !== "en" && typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("agrimind:language-ready"))
+      }
+    })
   }, [loadCatalog])
 
   useEffect(() => {
@@ -143,13 +159,13 @@ export function LanguageProvider({
       setLanguageState(lang)
       setStoredLanguage(lang)
       await loadCatalog(lang)
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("agrimind:language-ready"))
+      }
       if (lang !== "en") {
         const info = getAsianLanguage(lang) as AsianLanguage
-        const via = hasBuiltInShellTranslations(lang)
-          ? "built-in + Valsea"
-          : "Valsea"
-        toast.success(`${info.nativeLabel} — ${via} translation active`, {
-          duration: 2500,
+        toast.success(`${info.nativeLabel} — translating site…`, {
+          duration: 2000,
         })
       }
     },
@@ -188,10 +204,20 @@ export function LanguageProvider({
       setLanguage,
       t,
       translateTexts,
-      isTranslating,
+      isTranslating: isTranslating || isPageTranslating,
+      isPageTranslating,
+      setPageTranslating,
       languageGroups,
     }),
-    [language, setLanguage, t, translateTexts, isTranslating, languageGroups]
+    [
+      language,
+      setLanguage,
+      t,
+      translateTexts,
+      isTranslating,
+      isPageTranslating,
+      languageGroups,
+    ]
   )
 
   return (

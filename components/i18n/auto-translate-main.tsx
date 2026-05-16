@@ -1,164 +1,136 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useCallback, useEffect, useRef } from "react"
 import { usePathname } from "next/navigation"
 import { useLanguage } from "@/contexts/language-context"
-import { getLandingStaticTranslation } from "@/lib/i18n/landing-static"
 import {
   getPageTranslationCache,
   setPageTranslationCache,
 } from "@/lib/i18n/storage"
-
-const SKIP_TAGS = new Set([
-  "SCRIPT",
-  "STYLE",
-  "SVG",
-  "NOSCRIPT",
-  "CODE",
-  "PRE",
-  "INPUT",
-  "TEXTAREA",
-  "SELECT",
-  "OPTION",
-])
-
-function shouldSkip(el: Element): boolean {
-  if (el.closest("[data-no-translate]")) return true
-  if (el.closest("[data-i18n-key]")) return true
-  if (el.closest("[data-slot='dropdown-menu']")) return true
-  if (SKIP_TAGS.has(el.tagName)) return true
-  return false
-}
-
-/** Direct text nodes only (e.g. button label next to an icon) */
-function getOwnText(el: HTMLElement): string | null {
-  const parts: string[] = []
-  for (const node of el.childNodes) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const t = node.textContent?.trim()
-      if (t) parts.push(t)
-    }
-  }
-  const text = parts.join(" ").trim()
-  if (!text || text.length > 600) return null
-  return text
-}
-
-function getSourceText(el: HTMLElement): string | null {
-  const placeholder = el.getAttribute("placeholder")
-  if (placeholder?.trim()) {
-    if (!el.dataset.i18nOrigPlaceholder) {
-      el.dataset.i18nOrigPlaceholder = placeholder
-    }
-    return el.dataset.i18nOrigPlaceholder
-  }
-
-  const text = getOwnText(el)
-  if (!text) return null
-  if (!el.dataset.i18nOrig) {
-    el.dataset.i18nOrig = text
-  }
-  return el.dataset.i18nOrig
-}
-
-function applyTranslation(el: HTMLElement, translated: string) {
-  if (el.dataset.i18nOrigPlaceholder) {
-    el.setAttribute("placeholder", translated)
-    return
-  }
-  const orig = el.dataset.i18nOrig
-  if (!orig) return
-
-  let replaced = false
-  for (const node of el.childNodes) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const t = node.textContent?.trim()
-      if (t && !replaced) {
-        node.textContent = node.textContent?.replace(t, translated) ?? translated
-        replaced = true
-      } else if (t && replaced) {
-        node.textContent = ""
-      }
-    }
-  }
-  if (!replaced) {
-    el.textContent = translated
-  }
-}
-
-function restoreEnglish(root: HTMLElement) {
-  root.querySelectorAll<HTMLElement>("[data-i18n-orig]").forEach((el) => {
-    applyTranslation(el, el.dataset.i18nOrig!)
-  })
-  root.querySelectorAll<HTMLElement>("[data-i18n-orig-placeholder]").forEach((el) => {
-    if (el.dataset.i18nOrigPlaceholder) {
-      el.setAttribute("placeholder", el.dataset.i18nOrigPlaceholder)
-    }
-  })
-}
-
-const BLOCK_TAGS =
-  "h1,h2,h3,h4,h5,h6,p,label,button,a,th,td,li,span,dt,dd,figcaption,blockquote,[placeholder],[data-slot='card-title'],[data-slot='card-description']"
-
+import {
+  applyTextTranslation,
+  collectPlaceholderTargets,
+  collectTextTargets,
+  resolveTranslations,
+  restoreEnglishPage,
+} from "@/lib/i18n/page-translator-client"
 export function AutoTranslateMain({ children }: { children: React.ReactNode }) {
-  const { language, translateTexts } = useLanguage()
+  const { language, translateTexts, setPageTranslating } = useLanguage()
   const pathname = usePathname()
   const rootRef = useRef<HTMLDivElement>(null)
   const runId = useRef(0)
+  const applyingRef = useRef(false)
+  const cacheRef = useRef<Record<string, Record<string, string>>>({})
+
+  const runTranslation = useCallback(async () => {
+    const root = rootRef.current
+    if (!root || language === "en") return
+
+    const currentRun = ++runId.current
+    setPageTranslating(true)
+
+    try {
+      const textTargets = collectTextTargets(root)
+      const placeholderTargets = collectPlaceholderTargets(root)
+
+      const sources: string[] = []
+      for (const t of textTargets) {
+        if (!sources.includes(t.source)) sources.push(t.source)
+      }
+      for (const p of placeholderTargets) {
+        if (!sources.includes(p.source)) sources.push(p.source)
+      }
+
+      if (sources.length === 0) return
+
+      const langCache =
+        cacheRef.current[language] ??
+        getPageTranslationCache(language) ??
+        {}
+      const missing = sources.filter((s) => !langCache[s])
+
+      if (missing.length > 0) {
+        const apiResults = await translateTexts(missing)
+        if (currentRun !== runId.current) return
+
+        const resolved = resolveTranslations(language, missing, apiResults)
+        resolved.forEach((value, key) => {
+          langCache[key] = value
+        })
+        cacheRef.current[language] = langCache
+        setPageTranslationCache(language, langCache)
+      }
+
+      if (currentRun !== runId.current) return
+
+      applyingRef.current = true
+      try {
+        for (const { node, source } of textTargets) {
+          const translated = langCache[source]
+          if (translated && translated !== source) {
+            applyTextTranslation(node, translated)
+          }
+        }
+
+        for (const { el, source } of placeholderTargets) {
+          const translated = langCache[source]
+          if (translated && translated !== source) {
+            el.setAttribute("placeholder", translated)
+          }
+        }
+      } finally {
+        applyingRef.current = false
+      }
+    } finally {
+      if (currentRun === runId.current) {
+        setPageTranslating(false)
+      }
+    }
+  }, [language, translateTexts, setPageTranslating])
 
   useEffect(() => {
     const root = rootRef.current
     if (!root) return
 
     if (language === "en") {
-      restoreEnglish(root)
+      restoreEnglishPage(root)
       return
     }
 
-    const currentRun = ++runId.current
+    const initial = window.setTimeout(() => {
+      void runTranslation()
+    }, 400)
 
-    const timer = window.setTimeout(async () => {
-      const elements: HTMLElement[] = []
-      const sources: string[] = []
+    const observerDebounce = { current: 0 as ReturnType<typeof setTimeout> | 0 }
 
-      root.querySelectorAll<HTMLElement>(BLOCK_TAGS).forEach((el) => {
-        if (shouldSkip(el)) return
-        const src = getSourceText(el)
-        if (!src) return
-        elements.push(el)
-        sources.push(src)
-      })
+    const observer = new MutationObserver(() => {
+      if (applyingRef.current) return
+      window.clearTimeout(observerDebounce.current)
+      observerDebounce.current = window.setTimeout(() => {
+        void runTranslation()
+      }, 800)
+    })
 
-      if (sources.length === 0) return
+    observer.observe(root, {
+      childList: true,
+      subtree: true,
+    })
 
-      const unique = [...new Set(sources)]
-      const pageCache = getPageTranslationCache(language) ?? {}
+    return () => {
+      window.clearTimeout(initial)
+      window.clearTimeout(observerDebounce.current)
+      observer.disconnect()
+    }
+  }, [language, pathname, runTranslation])
 
-      for (const src of unique) {
-        if (pageCache[src]) continue
-        const builtIn = getLandingStaticTranslation(language, src)
-        if (builtIn) pageCache[src] = builtIn
-      }
-
-      const missing = unique.filter((u) => !pageCache[u])
-
-      if (missing.length > 0) {
-        const translatedMissing = await translateTexts(missing)
-        missing.forEach((src, i) => {
-          pageCache[src] = translatedMissing[i] ?? src
-        })
-        setPageTranslationCache(language, pageCache)
-      }
-
-      if (currentRun !== runId.current) return
-
-      sources.forEach((src, i) => {
-        applyTranslation(elements[i], pageCache[src] ?? src)
-      })
-    }, 600)
-
-    return () => window.clearTimeout(timer)
-  }, [language, translateTexts, pathname, children])
+  useEffect(() => {
+    const onLanguageReady = () => {
+      if (language !== "en") void runTranslation()
+    }
+    window.addEventListener("agrimind:language-ready", onLanguageReady)
+    return () =>
+      window.removeEventListener("agrimind:language-ready", onLanguageReady)
+  }, [language, runTranslation])
 
   return (
     <div ref={rootRef} className="min-h-0" data-translate-root>
