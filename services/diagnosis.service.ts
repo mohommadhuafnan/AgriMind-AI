@@ -48,6 +48,15 @@ export async function getDiagnosisReport(
   return DiagnosisReport.findOne({ _id: reportId, firebaseUid }).lean()
 }
 
+export async function deleteDiagnosisReport(
+  firebaseUid: string,
+  reportId: string
+): Promise<boolean> {
+  await connectDB()
+  const result = await DiagnosisReport.deleteOne({ _id: reportId, firebaseUid })
+  return result.deletedCount > 0
+}
+
 function diagnosisResult(report: IDiagnosisReport): CropDiagnosisResult {
   return report.result as CropDiagnosisResult
 }

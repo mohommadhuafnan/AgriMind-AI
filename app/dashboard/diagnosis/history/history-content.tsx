@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import {
@@ -9,10 +10,21 @@ import {
   FileText,
   MessageCircle,
   AlertTriangle,
+  Trash2,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { useDiagnosisHistory } from "@/hooks/use-diagnosis-history"
 import { buildDiagnosisShareUrl } from "@/services/whatsapp.service"
 import type { CropDiagnosisResult } from "@/types/ai"
@@ -27,7 +39,19 @@ const severityColor = {
 export function DiagnosisHistoryContent() {
   const searchParams = useSearchParams()
   const highlightId = searchParams.get("id")
-  const { reports, loading, downloadPdf } = useDiagnosisHistory()
+  const { reports, loading, deletingId, downloadPdf, deleteReport } =
+    useDiagnosisHistory()
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+
+  const pendingReport = pendingDeleteId
+    ? reports.find((r) => String(r._id) === pendingDeleteId)
+    : null
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteId) return
+    await deleteReport(pendingDeleteId)
+    setPendingDeleteId(null)
+  }
 
   if (loading) {
     return (
@@ -82,6 +106,7 @@ export function DiagnosisHistoryContent() {
               diagnosis: result,
               reportId: id,
             })
+            const isDeleting = deletingId === id
 
             return (
               <Card
@@ -122,16 +147,38 @@ export function DiagnosisHistoryContent() {
                       variant="outline"
                       size="sm"
                       className="gap-2"
+                      disabled={isDeleting}
                       onClick={() => downloadPdf(id)}
                     >
                       <FileText className="h-4 w-4" />
                       PDF
                     </Button>
-                    <Button variant="outline" size="sm" className="gap-2" asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      disabled={isDeleting}
+                      asChild
+                    >
                       <Link href={whatsappUrl} target="_blank" rel="noopener noreferrer">
                         <MessageCircle className="h-4 w-4 text-[#25D366]" />
                         WhatsApp
                       </Link>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      disabled={isDeleting}
+                      onClick={() => setPendingDeleteId(id)}
+                    >
+                      {isDeleting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                      Delete
                     </Button>
                   </div>
                 </CardContent>
@@ -140,6 +187,52 @@ export function DiagnosisHistoryContent() {
           })}
         </div>
       )}
+
+      <AlertDialog
+        open={Boolean(pendingDeleteId)}
+        onOpenChange={(open) => {
+          if (!open && !deletingId) setPendingDeleteId(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this diagnosis report?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingReport ? (
+                <>
+                  This will permanently remove the report for{" "}
+                  <span className="font-medium text-foreground capitalize">
+                    {String(pendingReport.cropType)} — {String(pendingReport.disease)}
+                  </span>
+                  . This action cannot be undone.
+                </>
+              ) : (
+                "This action cannot be undone."
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={Boolean(deletingId)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={Boolean(deletingId)}
+              onClick={(e) => {
+                e.preventDefault()
+                void handleConfirmDelete()
+              }}
+            >
+              {deletingId ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Deleting…
+                </>
+              ) : (
+                "Delete report"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

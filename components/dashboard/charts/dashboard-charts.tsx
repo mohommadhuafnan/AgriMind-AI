@@ -11,7 +11,13 @@ import {
   YAxis,
 } from "recharts"
 
-const COLORS = ["var(--primary)", "var(--accent)", "var(--chart-3)", "var(--chart-5)"]
+/** Teal palette — matches Ask AI card */
+const TEAL_CHART = {
+  high: "var(--agri-teal-light)",
+  mid: "var(--agri-teal)",
+  low: "var(--agri-teal-dark)",
+  bar: "var(--agri-teal)",
+}
 
 interface HealthItem {
   name: string
@@ -52,10 +58,10 @@ export function CropHealthChart({ data }: { data: HealthItem[] }) {
               key={entry.name}
               fill={
                 entry.health >= 80
-                  ? COLORS[0]
+                  ? TEAL_CHART.high
                   : entry.health >= 60
-                    ? COLORS[1]
-                    : COLORS[3]
+                    ? TEAL_CHART.mid
+                    : TEAL_CHART.low
               }
             />
           ))}
@@ -87,7 +93,7 @@ export function DiagnosisActivityChart({ data }: { data: DiagnosisItem[] }) {
             borderRadius: "8px",
           }}
         />
-        <Bar dataKey="count" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="count" fill={TEAL_CHART.bar} radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   )

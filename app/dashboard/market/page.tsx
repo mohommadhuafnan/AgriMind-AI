@@ -7,7 +7,6 @@ import {
   TrendingDown,
   Search,
   MapPin,
-  Sparkles,
   ArrowRight,
   BarChart3,
   Bell,
@@ -46,6 +45,8 @@ import {
   Legend,
 } from "recharts"
 import { useMarket } from "@/hooks/use-market"
+import { MarketPriceCards } from "@/components/dashboard/market-price-cards"
+import { MarketInsightsSection } from "@/components/dashboard/market-insights-section"
 import { buildWhatsAppUrl } from "@/lib/whatsapp/config"
 import { toast } from "sonner"
 
@@ -139,6 +140,14 @@ export default function MarketPage() {
     }
   }
 
+  const handleRefresh = () => {
+    void refreshPrices()
+      .then(() => toast.success("Market prices refreshed with OpenAI"))
+      .catch((e) =>
+        toast.error(e instanceof Error ? e.message : "Refresh failed")
+      )
+  }
+
   if (loading) {
     return (
       <motion.div
@@ -156,30 +165,44 @@ export default function MarketPage() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="space-y-6"
+      className="space-y-4 pb-2 sm:space-y-6"
     >
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl font-bold text-foreground">Market Prices</h1>
-          <p className="text-muted-foreground">
-            Sri Lanka wholesale prices updated by OpenAI estimates and AI demand
-            forecasts.
+          <h1 className="text-xl font-bold text-foreground sm:text-2xl">Market Prices</h1>
+          <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+            Sri Lanka wholesale prices with AI demand forecasts.
           </p>
           {priceSource === "ai_estimate" && (
-            <p className="text-xs text-muted-foreground mt-1 max-w-xl">
-              AI-estimated wholesale (not live auction). Market date:{" "}
-              {dataAsOf ?? "—"}. Compare with Dambulla / local buyers before
-              selling.
+            <p className="text-xs text-muted-foreground">
+              AI estimates · Market date: {dataAsOf ?? "—"}
             </p>
           )}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-xs text-muted-foreground sm:hidden">
+            <span className="inline-flex items-center gap-1.5">
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  refreshing
+                    ? "bg-accent animate-pulse"
+                    : stale
+                      ? "bg-amber-500"
+                      : "bg-primary"
+                }`}
+              />
+              Updated {formatRelativeTime(lastUpdated)}
+            </span>
+            {stale && !refreshing && (
+              <span className="text-amber-600 dark:text-amber-400">May be outdated</span>
+            )}
+          </div>
         </motion.div>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="flex flex-col sm:items-end gap-2"
+          className="hidden flex-col sm:flex sm:items-end gap-2"
         >
-          <motion.div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <div
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span
               className={`h-2 w-2 rounded-full ${
                 refreshing
                   ? "bg-accent animate-pulse"
@@ -194,19 +217,13 @@ export default function MarketPage() {
                 (may be outdated)
               </span>
             )}
-          </motion.div>
+          </div>
           <Button
             variant="outline"
             size="sm"
             className="gap-2"
             disabled={refreshing || !openAiConfigured}
-            onClick={() =>
-              void refreshPrices()
-                .then(() => toast.success("Market prices refreshed with OpenAI"))
-                .catch((e) =>
-                  toast.error(e instanceof Error ? e.message : "Refresh failed")
-                )
-            }
+            onClick={handleRefresh}
           >
             {refreshing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -227,20 +244,21 @@ export default function MarketPage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
-        className="flex flex-col sm:flex-row gap-4"
+        className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3"
       >
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="relative min-w-0 flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search crops..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
+            className="h-10 pl-9"
           />
         </div>
+        <div className="flex gap-2 sm:contents">
         <Select value={selectedCrop} onValueChange={setSelectedCrop}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by crop" />
+          <SelectTrigger className="h-10 min-w-0 flex-1 sm:w-[160px]">
+            <SelectValue placeholder="All crops" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Crops</SelectItem>
@@ -251,66 +269,40 @@ export default function MarketPage() {
             ))}
           </SelectContent>
         </Select>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-10 w-10 shrink-0 sm:hidden"
+          disabled={refreshing || !openAiConfigured}
+          onClick={handleRefresh}
+          aria-label="Refresh prices"
+        >
+          {refreshing ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4" />
+          )}
+        </Button>
+        </div>
       </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-      >
-        <Card className="bg-gradient-to-r from-primary/10 via-accent/10 to-chart-3/10 border-primary/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              AI Market Insights
-              {insightsLoading && (
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-3 gap-4">
-              {(insights.length ? insights : []).map((rec, index) => (
-                <div
-                  key={index}
-                  className={`p-4 rounded-xl ${
-                    rec.type === "warning"
-                      ? "bg-destructive/10"
-                      : rec.type === "info"
-                        ? "bg-muted"
-                        : "bg-primary/10"
-                  }`}
-                >
-                  <h4 className="font-medium text-foreground mb-2">{rec.title}</h4>
-                  <p className="text-sm text-muted-foreground">{rec.description}</p>
-                </div>
-              ))}
-              {!insightsLoading && insights.length === 0 && (
-                <p className="text-sm text-muted-foreground col-span-3">
-                  Insights will appear when OpenAI is configured.
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      <div className="grid lg:grid-cols-3 gap-6">
+      <motion.div className="flex flex-col gap-4 lg:grid lg:grid-cols-3 lg:gap-6">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="lg:col-span-2"
+          transition={{ delay: 0.05 }}
+          className="order-1 lg:order-2 lg:col-span-2"
         >
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                 <BarChart3 className="h-5 w-5" />
                 Current Market Prices
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
+            <CardContent className="pt-0">
+              <MarketPriceCards crops={filteredPrices} />
+              <div className="hidden overflow-x-auto md:block">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-border">
@@ -398,11 +390,11 @@ export default function MarketPage() {
           </Card>
         </motion.div>
 
-        <div className="space-y-6">
+        <div className="order-2 space-y-4 lg:order-3">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.1 }}
           >
             <Card>
               <CardHeader>
@@ -544,7 +536,13 @@ export default function MarketPage() {
             </Card>
           </motion.div>
         </div>
-      </div>
+
+        <MarketInsightsSection
+          insights={insights}
+          loading={insightsLoading}
+          className="order-3 lg:order-1 lg:col-span-3"
+        />
+      </motion.div>
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -553,10 +551,12 @@ export default function MarketPage() {
       >
         <Card>
           <CardHeader>
-            <CardTitle>Price Trends (Last 5 Months)</CardTitle>
+            <CardTitle className="text-base sm:text-lg">
+              Price Trends (Last 5 Months)
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
+            <div className="h-[220px] sm:h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />

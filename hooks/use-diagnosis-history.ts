@@ -6,6 +6,7 @@ import { toast } from "sonner"
 export function useDiagnosisHistory() {
   const [reports, setReports] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(true)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const fetchHistory = useCallback(async () => {
     try {
@@ -27,5 +28,29 @@ export function useDiagnosisHistory() {
     window.open(`/api/diagnosis/${reportId}/pdf`, "_blank")
   }
 
-  return { reports, loading, fetchHistory, downloadPdf }
+  const deleteReport = async (reportId: string) => {
+    setDeletingId(reportId)
+    try {
+      const res = await fetch(`/api/diagnosis/${reportId}`, { method: "DELETE" })
+      const json = await res.json()
+      if (!res.ok) {
+        throw new Error(json.error ?? "Failed to delete report")
+      }
+      setReports((prev) => prev.filter((r) => String(r._id) !== reportId))
+      toast.success("Diagnosis report deleted")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete report")
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  return {
+    reports,
+    loading,
+    deletingId,
+    fetchHistory,
+    downloadPdf,
+    deleteReport,
+  }
 }

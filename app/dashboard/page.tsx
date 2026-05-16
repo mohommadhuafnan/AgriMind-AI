@@ -60,14 +60,14 @@ export default function DashboardPage() {
       value: String(data?.diagnosisCount ?? 0),
       change: "Total reports",
       icon: TrendingUp,
-      color: "bg-chart-3",
+      color: "bg-agri-teal",
     },
     {
       title: "Weather",
       value: weather.temp ?? "—",
       change: weather.condition ?? "—",
       icon: CloudSun,
-      color: "bg-chart-5",
+      color: "bg-agri-teal-light",
     },
   ]
 
@@ -127,7 +127,10 @@ export default function DashboardPage() {
       <div className="grid lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Crop Health</CardTitle>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-agri-teal" aria-hidden />
+              Crop Health
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <CropHealthChart data={healthTrend} />
@@ -135,7 +138,10 @@ export default function DashboardPage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Diagnosis Activity</CardTitle>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-agri-teal-light" aria-hidden />
+              Diagnosis Activity
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <DiagnosisActivityChart data={diagnosisTrend} />

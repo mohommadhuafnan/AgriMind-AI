@@ -18,6 +18,7 @@ const actions = [
     className:
       "from-green-600 via-primary to-green-700 shadow-green-900/25 hover:shadow-green-900/35",
     iconWrap: "bg-white/20 ring-white/30",
+    focusRing: "focus-visible:ring-primary",
   },
   {
     key: "ask" as const,
@@ -27,8 +28,9 @@ const actions = [
     descKey: "dashboard.askAi.desc" satisfies UiCatalogKey,
     ctaKey: "dashboard.askAi.cta" satisfies UiCatalogKey,
     className:
-      "from-green-700 via-primary to-emerald-600 shadow-green-900/25 hover:shadow-green-900/35",
+      "from-teal-700 via-teal-500 to-cyan-600 shadow-teal-900/30 hover:shadow-teal-900/40",
     iconWrap: "bg-white/20 ring-white/30",
+    focusRing: "focus-visible:ring-teal-400",
   },
 ] as const
 
@@ -55,7 +57,8 @@ export function DashboardPrimaryActions() {
             href={action.href}
             className={cn(
               "group relative flex min-h-[168px] flex-col justify-between overflow-hidden rounded-2xl p-6 text-white shadow-lg transition-all duration-300",
-              "bg-gradient-to-br hover:-translate-y-0.5 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+              "bg-gradient-to-br hover:-translate-y-0.5 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+              action.focusRing,
               action.className
             )}
           >
