@@ -8,6 +8,10 @@ import {
   supportsLiveBrowserStt,
 } from "@/lib/voice/speech-recognition"
 import {
+  audioFilenameForMime,
+  pickAudioMimeType,
+} from "@/lib/voice/recording"
+import {
   AUTO_DETECT_LANGUAGE,
   isAutoDetectLanguage,
   type VoiceLanguagePreference,
@@ -19,7 +23,13 @@ type VoiceInputOptions = {
   onTextChange?: (text: string) => void
 }
 
-const MIN_RECORDING_BYTES = 400
+const MIN_RECORDING_BYTES = 1200
+const MIN_RECORDING_MS = 700
+
+export type VoiceStopResult = {
+  text: string | null
+  errorShown: boolean
+}
 
 /** Mic: live typing when browser STT works; always records audio for VALSEA on stop */
 export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
@@ -35,12 +45,16 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
   const streamRef = useRef<MediaStream | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const mimeTypeRef = useRef("audio/webm")
+  const recordStartedAtRef = useRef(0)
   const resolveStopRef = useRef<((text: string | null) => void) | null>(null)
   const skipTranscribeRef = useRef(false)
   const optionsRef = useRef<VoiceInputOptions>({})
+  const lastErrorShownRef = useRef(false)
 
   const transcribeLanguage: SupportedLanguage | "auto" =
-    isAutoDetectLanguage(languagePreference) ? AUTO_DETECT_LANGUAGE : languagePreference
+    isAutoDetectLanguage(languagePreference)
+      ? AUTO_DETECT_LANGUAGE
+      : languagePreference
 
   const liveSttEnabled =
     !isAutoDetectLanguage(languagePreference) &&
@@ -48,9 +62,9 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
     supportsLiveBrowserStt(languagePreference)
 
   const transcribeBlob = useCallback(
-    async (blob: Blob): Promise<string | null> => {
+    async (blob: Blob, filename: string): Promise<string | null> => {
       const formData = new FormData()
-      formData.append("file", blob, "recording.webm")
+      formData.append("file", blob, filename)
       formData.append("language", transcribeLanguage)
 
       const res = await fetch("/api/valsea/transcribe", {
@@ -80,6 +94,9 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
 
       resolveStopRef.current = resolve
       try {
+        if (recorder.state === "recording") {
+          recorder.requestData()
+        }
         recorder.stop()
       } catch {
         releaseStream()
@@ -91,21 +108,24 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
 
   const startRecording = useCallback(async (): Promise<boolean> => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      })
       streamRef.current = stream
 
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : MediaRecorder.isTypeSupported("audio/mp4")
-          ? "audio/mp4"
-          : ""
-      mimeTypeRef.current = mimeType || "audio/webm"
+      const mimeType = pickAudioMimeType()
+      mimeTypeRef.current = mimeType
 
       const recorder = new MediaRecorder(
         stream,
         mimeType ? { mimeType } : undefined
       )
       chunksRef.current = []
+      recordStartedAtRef.current = Date.now()
 
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data)
@@ -127,15 +147,24 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
         const blob = new Blob(chunksRef.current, {
           type: mimeTypeRef.current,
         })
+        const filename = audioFilenameForMime(mimeTypeRef.current)
+        const durationMs = Date.now() - recordStartedAtRef.current
 
-        if (blob.size >= MIN_RECORDING_BYTES) {
+        if (
+          blob.size >= MIN_RECORDING_BYTES &&
+          durationMs >= MIN_RECORDING_MS
+        ) {
           setIsTranscribing(true)
           try {
-            text = await transcribeBlob(blob)
+            text = await transcribeBlob(blob, filename)
             if (!text?.trim()) {
-              toast.error("Could not understand your voice. Try again.")
+              lastErrorShownRef.current = true
+              toast.error(
+                "Could not understand your voice. Speak clearly and try again."
+              )
             }
           } catch (err) {
+            lastErrorShownRef.current = true
             toast.error(
               err instanceof Error ? err.message : "Transcription failed"
             )
@@ -143,7 +172,10 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
             setIsTranscribing(false)
           }
         } else {
-          toast.error("Recording too short. Speak longer, then tap the red button.")
+          lastErrorShownRef.current = true
+          toast.error(
+            "Recording too short. Hold the mic, speak for at least a second, then tap red."
+          )
         }
 
         if (text?.trim()) {
@@ -159,6 +191,7 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
       setIsRecording(true)
       return true
     } catch {
+      lastErrorShownRef.current = true
       toast.error("Microphone access denied. Allow mic in browser settings.")
       return false
     }
@@ -166,6 +199,7 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
 
   const startListening = useCallback(
     async (options?: VoiceInputOptions): Promise<boolean> => {
+      lastErrorShownRef.current = false
       optionsRef.current = options ?? {}
       const initial = options?.initialText?.trim() ?? ""
       options?.onTextChange?.(initial)
@@ -187,17 +221,19 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
         }
       } else {
         toast.message(
-          "Recording — speak, then tap the red button to convert to text",
+          isAutoDetectLanguage(languagePreference)
+            ? "Recording — speak in any language, then tap the red button"
+            : "Recording — speak, then tap the red button to convert to text",
           { duration: 4000 }
         )
       }
 
       return true
     },
-    [liveSttEnabled, realtime, startRecording]
+    [languagePreference, liveSttEnabled, realtime, startRecording]
   )
 
-  const stopListening = useCallback(async (): Promise<string | null> => {
+  const stopListening = useCallback(async (): Promise<VoiceStopResult> => {
     let liveText = ""
 
     if (realtime.isListening) {
@@ -205,29 +241,38 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
     }
 
     let valseaText: string | null = null
-    if (liveText.length >= 2) {
+    const shouldUseValsea =
+      isAutoDetectLanguage(languagePreference) || liveText.length < 2
+
+    if (liveText.length >= 2 && !shouldUseValsea) {
       skipTranscribeRef.current = true
       await stopRecorderAndTranscribe()
     } else {
       valseaText = (await stopRecorderAndTranscribe())?.trim() ?? null
     }
 
-    const merged = liveText || valseaText || null
+    const merged =
+      shouldUseValsea && valseaText
+        ? valseaText
+        : liveText || valseaText || null
 
     if (merged) {
       optionsRef.current.onTextChange?.(merged)
     }
 
-    return merged
-  }, [realtime, stopRecorderAndTranscribe])
+    return {
+      text: merged,
+      errorShown: lastErrorShownRef.current,
+    }
+  }, [languagePreference, realtime, stopRecorderAndTranscribe])
 
   const toggleListening = useCallback(
-    async (options?: VoiceInputOptions): Promise<string | null> => {
+    async (options?: VoiceInputOptions): Promise<VoiceStopResult | null> => {
       if (isRecording || realtime.isListening) {
         return stopListening()
       }
       const ok = await startListening(options)
-      return ok ? null : null
+      return ok ? null : { text: null, errorShown: lastErrorShownRef.current }
     },
     [isRecording, realtime.isListening, startListening, stopListening]
   )

@@ -1,5 +1,9 @@
 import { jsPDF } from "jspdf"
+import { getAgriMindLogoDataUrl } from "@/lib/brand/logo-pdf"
 import type { CropDiagnosisResult } from "@/types/ai"
+
+const HEADER_HEIGHT_MM = 32
+const LOGO_SIZE_MM = 18
 
 export interface DiagnosisPdfInput {
   farmerName: string
@@ -27,13 +31,26 @@ export function generateDiagnosisPdf(input: DiagnosisPdfInput): Buffer {
   }
 
   doc.setFillColor(34, 120, 70)
-  doc.rect(0, 0, 210, 28, "F")
+  doc.rect(0, 0, 210, HEADER_HEIGHT_MM, "F")
+
+  const logo = getAgriMindLogoDataUrl()
+  const titleX = logo ? 14 + LOGO_SIZE_MM + 5 : 15
+  const logoY = (HEADER_HEIGHT_MM - LOGO_SIZE_MM) / 2
+
+  if (logo) {
+    doc.addImage(logo, "PNG", 14, logoY, LOGO_SIZE_MM, LOGO_SIZE_MM)
+  }
+
   doc.setTextColor(255, 255, 255)
-  doc.setFontSize(18)
+  doc.setFontSize(16)
   doc.setFont("helvetica", "bold")
-  doc.text("AgriMind AI — Crop Diagnosis Report", 15, 18)
+  doc.text("AgriMind AI", titleX, 14)
+  doc.setFontSize(11)
+  doc.setFont("helvetica", "normal")
+  doc.text("Crop Diagnosis Report", titleX, 22)
+
   doc.setTextColor(30, 30, 30)
-  y = 38
+  y = HEADER_HEIGHT_MM + 10
 
   line(`Farmer: ${input.farmerName}`, 11, true)
   line(`Crop: ${input.cropType}  |  Date: ${input.createdAt.toLocaleDateString("en-LK")}`)

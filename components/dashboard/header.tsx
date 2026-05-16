@@ -42,7 +42,7 @@ export function DashboardHeader({ onOpenMobileMenu }: DashboardHeaderProps) {
         </div>
 
         <div className="min-w-0 flex-1 lg:hidden">
-          <AgriMindLogo size="xs" iconOnly href="/dashboard" />
+          <AgriMindLogo size="sm" iconOnly href="/dashboard" />
           <LiveDateTime variant="compact" className="!mt-1 !block text-left" />
         </div>
 

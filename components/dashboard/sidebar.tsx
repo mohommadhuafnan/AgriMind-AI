@@ -76,14 +76,14 @@ export function DashboardSidebar() {
         <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border">
           {!collapsed && (
             <AgriMindLogo
-              size="sm"
+              size="md"
               href="/dashboard"
               className="[&_span]:text-sidebar-foreground"
             />
           )}
           {collapsed && (
             <AgriMindLogo
-              size="sm"
+              size="md"
               iconOnly
               href="/dashboard"
               className="mx-auto"

@@ -47,7 +47,7 @@ export function Footer() {
             {/* Brand Column */}
             <div className="col-span-2 md:col-span-3 lg:col-span-2">
               <AgriMindLogo
-                size="md"
+                size="lg"
                 className="mb-4 [&_span]:text-sidebar-foreground [&_.text-primary]:text-sidebar-primary"
               />
               <p className="text-sidebar-foreground/70 mb-6 max-w-xs">

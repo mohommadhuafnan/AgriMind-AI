@@ -37,13 +37,10 @@ export async function transcribeAudio(
 ): Promise<TranscribeResult> {
 
   return valseaTranscribe({
-
     file,
-
     filename,
-
-    language: language === "auto" ? "auto" : toValseaLanguage(language),
-
+    language:
+      language === "auto" ? undefined : toValseaLanguage(language),
   })
 
 }

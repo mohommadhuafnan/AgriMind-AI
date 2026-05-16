@@ -44,7 +44,7 @@ export function Header() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <AgriMindLogo size="md" priority />
+          <AgriMindLogo size="lg" priority />
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">

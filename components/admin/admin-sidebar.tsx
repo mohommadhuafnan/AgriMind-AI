@@ -43,7 +43,7 @@ export function AdminSidebar() {
     <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 border-r border-border bg-card lg:block">
       <div className="flex h-full flex-col">
         <div className="flex h-16 flex-col justify-center gap-0.5 border-b border-border px-4">
-          <AgriMindLogo size="sm" iconOnly href="/" />
+          <AgriMindLogo size="md" iconOnly href="/" />
           <p className="text-xs text-muted-foreground">Admin Console</p>
         </div>
 

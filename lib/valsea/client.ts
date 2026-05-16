@@ -23,7 +23,8 @@ function authHeaders(contentType?: string): HeadersInit {
 export interface TranscribeOptions {
   file: Blob
   filename?: string
-  language: string
+  /** Omit or `"auto"` to let VALSEA detect language */
+  language?: string
   enableCorrection?: boolean
   enableTags?: boolean
 }
@@ -34,9 +35,35 @@ export interface TranscribeResult {
   rawTranscript?: string
 }
 
-export async function valseaTranscribe(
-  options: TranscribeOptions
-): Promise<TranscribeResult> {
+function parseTranscribeError(data: unknown, status: number): string {
+  const payload = data as {
+    error?: { message?: string } | string
+    message?: string
+  }
+  if (typeof payload.error === "string") return payload.error
+  if (payload.error && typeof payload.error === "object" && payload.error.message) {
+    return payload.error.message
+  }
+  if (payload.message) return payload.message
+  if (status === 401) {
+    return "Voice service is not configured. Add a valid VALSEA_API_KEY."
+  }
+  return `Transcription failed (${status})`
+}
+
+function languageAttempts(language?: string): (string | undefined)[] {
+  const lang = language?.trim().toLowerCase()
+  if (!lang || lang === "auto") {
+    return [undefined, "english", "sinhala", "tamil"]
+  }
+  return [lang]
+}
+
+async function transcribeOnce(
+  options: TranscribeOptions,
+  language: string | undefined,
+  enableCorrection: boolean
+): Promise<{ ok: true; result: TranscribeResult } | { ok: false; status: number; message: string }> {
   const formData = new FormData()
   formData.append(
     "file",
@@ -44,11 +71,8 @@ export async function valseaTranscribe(
     options.filename ?? "recording.webm"
   )
   formData.append("model", VALSEA_MODELS.transcribe)
-  formData.append("language", options.language)
-  formData.append(
-    "enable_correction",
-    String(options.enableCorrection ?? true)
-  )
+  if (language) formData.append("language", language)
+  formData.append("enable_correction", String(enableCorrection))
   formData.append("enable_tags", String(options.enableTags ?? false))
   formData.append("response_format", "verbose_json")
 
@@ -61,11 +85,11 @@ export async function valseaTranscribe(
   const data = await res.json().catch(() => ({}))
 
   if (!res.ok) {
-    const message =
-      (data as { error?: { message?: string } })?.error?.message ??
-      (data as { message?: string })?.message ??
-      `Transcription failed (${res.status})`
-    throw new Error(message)
+    return {
+      ok: false,
+      status: res.status,
+      message: parseTranscribeError(data, res.status),
+    }
   }
 
   const verbose = data as {
@@ -75,10 +99,49 @@ export async function valseaTranscribe(
   }
 
   return {
-    text: verbose.text ?? "",
-    clarifiedText: verbose.clarified_text,
-    rawTranscript: verbose.raw_transcript,
+    ok: true,
+    result: {
+      text: verbose.text ?? "",
+      clarifiedText: verbose.clarified_text,
+      rawTranscript: verbose.raw_transcript,
+    },
   }
+}
+
+export async function valseaTranscribe(
+  options: TranscribeOptions
+): Promise<TranscribeResult> {
+  const attempts = languageAttempts(options.language)
+  let lastMessage = "Transcription failed"
+
+  for (let i = 0; i < attempts.length; i++) {
+    const lang = attempts[i]
+    const enableCorrection =
+      options.enableCorrection !== false && (i === 0 || lang !== undefined)
+
+    const result = await transcribeOnce(
+      options,
+      lang,
+      enableCorrection
+    )
+
+    if (result.ok) {
+      const text =
+        result.result.clarifiedText?.trim() ||
+        result.result.text?.trim() ||
+        result.result.rawTranscript?.trim() ||
+        ""
+      if (text) return result.result
+      lastMessage = "No speech detected in the recording"
+      continue
+    }
+
+    lastMessage = result.message
+    if (result.status === 401) break
+    if (result.status !== 400 && result.status !== 422) break
+  }
+
+  throw new Error(lastMessage)
 }
 
 export interface TranslateOptions {

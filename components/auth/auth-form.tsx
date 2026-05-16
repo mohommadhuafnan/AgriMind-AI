@@ -164,7 +164,7 @@ export function AuthForm({ mode, onModeChange, embedded = false }: AuthFormProps
               whileHover={{ scale: 1.05 }}
               transition={authSpring}
             >
-              <AgriMindLogo size="lg" iconOnly href={null} />
+              <AgriMindLogo size="xl" iconOnly href={null} />
             </motion.div>
             <h2 className="text-2xl font-bold tracking-tight text-foreground">
               {mode === "login" ? "Welcome back" : "Join AgriMind AI"}

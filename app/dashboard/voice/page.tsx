@@ -302,15 +302,15 @@ export default function VoiceAssistantPage() {
     }
 
     if (isListening) {
-      const text = await stopListening()
+      const { text, errorShown } = await stopListening()
       const finalText = (text ?? textInput).trim()
       setTextInput(finalText)
       textareaRef.current?.focus()
-      if (!finalText) {
+      if (!finalText && !errorShown) {
         toast.error(
           "No speech detected. Check your microphone, speak clearly, then tap the red button again."
         )
-      } else {
+      } else if (finalText) {
         toast.message("Text ready — edit if needed, then tap Send", {
           duration: 3500,
         })
@@ -332,8 +332,8 @@ export default function VoiceAssistantPage() {
 
     let text = textInput.trim()
     if (isListening) {
-      const heard = (await stopListening())?.trim()
-      if (heard) text = heard
+      const { text: heard } = await stopListening()
+      if (heard?.trim()) text = heard.trim()
       else text = textInput.trim()
     }
     if (!text) return

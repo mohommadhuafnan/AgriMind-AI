@@ -5,11 +5,11 @@ import { cn } from "@/lib/utils"
 const LOGO_SRC = "/agrimind-logo.png"
 
 const sizeMap = {
-  xs: { px: 28, text: "text-sm" },
-  sm: { px: 32, text: "text-base" },
-  md: { px: 40, text: "text-lg" },
-  lg: { px: 48, text: "text-xl" },
-  xl: { px: 56, text: "text-2xl" },
+  xs: { px: 36, text: "text-sm" },
+  sm: { px: 44, text: "text-base" },
+  md: { px: 52, text: "text-lg" },
+  lg: { px: 60, text: "text-xl" },
+  xl: { px: 72, text: "text-2xl" },
 } as const
 
 export type AgriMindLogoSize = keyof typeof sizeMap
@@ -58,7 +58,8 @@ export function AgriMindLogo({
   )
 
   const wrapClass = cn(
-    "inline-flex items-center gap-2",
+    "inline-flex items-center gap-2.5",
+    displayText && "gap-3",
     className
   )
 

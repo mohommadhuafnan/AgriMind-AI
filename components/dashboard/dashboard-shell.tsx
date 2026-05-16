@@ -34,7 +34,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <SheetContent side="left" className="flex w-[min(100%,20rem)] flex-col gap-0 p-0">
           <SheetHeader className="border-b border-border px-4 py-4 text-left">
             <SheetTitle className="sr-only">AgriMind AI menu</SheetTitle>
-            <AgriMindLogo size="sm" href="/dashboard" />
+            <AgriMindLogo size="md" href="/dashboard" />
           </SheetHeader>
           <div className="flex-1 overflow-y-auto px-3 py-4">
             <DashboardNavList
