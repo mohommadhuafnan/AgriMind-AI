@@ -12,6 +12,7 @@ import {
   Plus,
   Zap,
   Loader2,
+  Globe,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -32,17 +33,14 @@ import { useRealtimeSpeechInput } from "@/hooks/use-realtime-speech-input"
 import { useVoiceConversations } from "@/hooks/use-voice-conversations"
 import { VoiceMicButton } from "@/components/dashboard/voice/voice-mic-button"
 import { VoiceMessageActions } from "@/components/dashboard/voice/voice-message-actions"
+import { VoiceLanguageSelect } from "@/components/dashboard/voice/voice-language-select"
 import { WhatsAppSupportButton } from "@/components/dashboard/whatsapp-support-button"
+import { getVoiceWelcomeMessage } from "@/lib/voice/welcome"
 import { toast } from "sonner"
 import type { SupportedLanguage } from "@/types"
 import type { ChatMessageInput } from "@/types/ai"
 import { formatDistanceToNow } from "date-fns"
-
-const languages = [
-  { code: "en" as const, name: "English", native: "English" },
-  { code: "si" as const, name: "Sinhala", native: "සිංහල" },
-  { code: "ta" as const, name: "Tamil", native: "தமிழ்" },
-]
+import { isSupportedLanguage } from "@/lib/i18n/languages"
 
 const quickPrompts = [
   "My tomato leaves are turning yellow",
@@ -51,12 +49,6 @@ const quickPrompts = [
   "මගේ ගොවිතැනට වතුර දෙන්නේ කවදාද?",
   "தக்காளி செடிகளுக்கு உரம்",
 ]
-
-const WELCOME: Record<SupportedLanguage, string> = {
-  en: "Hello! Tap the microphone and ask your farming question. I'll reply in real time with voice.",
-  si: "ආයුබෝවන්! මයික්‍රොෆෝනය ඔබා ඔබේ ගොවිතැන් ප්‍රශ්නය අහන්න. මම කථනයෙන් උත්තර දෙමි.",
-  ta: "வணக்கம்! மைக்ரோஃபோனை அழுத்தி உங்கள் விவசாய கேள்வியைக் கேளுங்கள். நான் குரலில் பதிலளிப்பேன்.",
-}
 
 function toHistory(messages: VoiceUiMessage[]): ChatMessageInput[] {
   return messages
@@ -79,7 +71,7 @@ export default function VoiceAssistantPage() {
     {
       id: "welcome",
       role: "assistant",
-      content: WELCOME.en,
+      content: getVoiceWelcomeMessage("en"),
       timestamp: new Date(),
     },
   ])
@@ -133,7 +125,7 @@ export default function VoiceAssistantPage() {
       {
         id: "welcome",
         role: "assistant",
-        content: WELCOME[language],
+        content: getVoiceWelcomeMessage(language),
         timestamp: new Date(),
       },
     ])
@@ -237,7 +229,9 @@ export default function VoiceAssistantPage() {
   const handleLoadConversation = async (id: string) => {
     try {
       const data = await loadConversation(id)
-      setLanguage(data.language)
+      setLanguage(
+        isSupportedLanguage(data.language) ? data.language : "en"
+      )
       setMessages(
         data.messages.map((m, i) => ({
           id: `${id}-${i}`,
@@ -261,7 +255,7 @@ export default function VoiceAssistantPage() {
       {
         id: "welcome",
         role: "assistant",
-        content: WELCOME[language],
+        content: getVoiceWelcomeMessage(language),
         timestamp: new Date(),
       },
     ])
@@ -288,6 +282,10 @@ export default function VoiceAssistantPage() {
                 ? "Live speech → text"
                 : "Voice STT + OpenAI TTS"}
             </Badge>
+            <Badge variant="outline" className="gap-1 border-primary/30 text-primary">
+              <Globe className="h-3 w-3" />
+              VALSEA.ai
+            </Badge>
             <Badge variant="outline" className="gap-1">
               <Zap className="h-3 w-3" />
               {useStreaming ? "Live stream" : "Standard"}
@@ -295,26 +293,15 @@ export default function VoiceAssistantPage() {
           </div>
           <h1 className="text-2xl font-bold text-foreground">Voice Assistant</h1>
           <p className="text-muted-foreground">
-            Multilingual farming help — Sinhala, Tamil, and English
+            Multilingual farming help powered by VALSEA.ai — 15+ Asian languages
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-end">
-          <div className="flex gap-1 rounded-full bg-muted p-1">
-            {languages.map((lang) => (
-              <button
-                key={lang.code}
-                type="button"
-                onClick={() => setLanguage(lang.code)}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                  language === lang.code
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {lang.native}
-              </button>
-            ))}
-          </div>
+          <VoiceLanguageSelect
+            value={language}
+            onChange={setLanguage}
+            disabled={isProcessing || isListening}
+          />
           <Button
             variant="outline"
             size="sm"
