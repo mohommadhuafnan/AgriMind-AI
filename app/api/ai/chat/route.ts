@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getSessionUser } from "@/lib/auth/session"
-import { getFarmingAssistantReply } from "@/services/ai.service"
+import { isSupportedLanguage } from "@/lib/i18n/languages"
+import { getMultilingualFarmingReply } from "@/services/valsea.service"
 import type { ChatMessageInput } from "@/types/ai"
 import type { SupportedLanguage } from "@/types"
 
@@ -28,8 +29,9 @@ export async function POST(request: Request) {
       )
     }
 
-    const lang: SupportedLanguage = language ?? "en"
-    const result = await getFarmingAssistantReply(
+    const lang: SupportedLanguage =
+      language && isSupportedLanguage(language) ? language : "en"
+    const result = await getMultilingualFarmingReply(
       message.trim(),
       lang,
       history ?? []
@@ -39,6 +41,7 @@ export async function POST(request: Request) {
       success: true,
       data: {
         reply: result.reply,
+        replyEnglish: result.replyEnglish,
         language: lang,
       },
     })

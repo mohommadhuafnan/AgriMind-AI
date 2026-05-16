@@ -90,48 +90,44 @@ export async function translateText(
 /** Voice/text assist — OpenAI + optional Valsea translation polish */
 
 export async function getMultilingualFarmingReply(
-
   userMessage: string,
-
   language: SupportedLanguage,
-
   history?: { role: "user" | "assistant"; content: string }[]
-
 ): Promise<{ reply: string; replyEnglish: string }> {
-
-  let { reply } = await getFarmingAssistantReply(userMessage, language, history)
-
-
+  let query = userMessage.trim()
 
   if (language !== "en") {
-
     try {
-
-      const polished = await translateText(reply, language, "auto")
-
-      if (polished.translatedText?.trim()) {
-
-        reply = polished.translatedText
-
+      const toEnglish = await translateText(query, "en", language)
+      if (toEnglish.translatedText?.trim()) {
+        query = toEnglish.translatedText.trim()
       }
-
     } catch {
-
-      /* use OpenAI reply */
-
+      /* use original message */
     }
-
   }
 
+  const { reply: englishReply } = await getFarmingAssistantReply(
+    query,
+    "en",
+    history
+  )
 
-
-  return {
-
-    reply,
-
-    replyEnglish: reply,
-
+  if (language === "en") {
+    return { reply: englishReply, replyEnglish: englishReply }
   }
 
+  try {
+    const localized = await translateText(englishReply, language, "en")
+    const reply = localized.translatedText?.trim() || englishReply
+    return { reply, replyEnglish: englishReply }
+  } catch {
+    const direct = await getFarmingAssistantReply(
+      userMessage,
+      language,
+      history
+    )
+    return { reply: direct.reply, replyEnglish: englishReply }
+  }
 }
 

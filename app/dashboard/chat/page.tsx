@@ -24,8 +24,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
+import { AsianLanguageSelect } from "@/components/i18n/asian-language-select"
 import { useAiChat } from "@/hooks/use-ai-chat"
 import { useVoiceInput } from "@/hooks/use-voice-input"
+import { getChatWelcomeMessage } from "@/lib/chat/welcome"
+import { getLanguageDisplayLabel } from "@/lib/i18n/languages"
 import { toast } from "sonner"
 import type { ChatMessageInput } from "@/types/ai"
 import type { SupportedLanguage } from "@/types"
@@ -38,14 +41,14 @@ interface Message {
   status?: "sending" | "sent" | "error"
 }
 
-const initialMessages: Message[] = [
-  {
-    id: "1",
+function buildWelcomeMessage(language: SupportedLanguage): Message {
+  return {
+    id: "welcome",
     type: "ai",
-    content: "Hello! I'm your AgriMind AI farming assistant powered by OpenAI. I can help with crop diseases, treatments, fertilizers, pests, and Sri Lankan farming practices.\n\nHow can I assist you today?",
-    timestamp: new Date(Date.now() - 300000),
-  },
-]
+    content: getChatWelcomeMessage(language),
+    timestamp: new Date(),
+  }
+}
 
 const suggestedQuestions = [
   "How do I treat yellow leaves on tomatoes?",
@@ -54,15 +57,11 @@ const suggestedQuestions = [
   "How to prevent coconut beetle attack?",
 ]
 
-const languages = [
-  { code: "en" as const, label: "English" },
-  { code: "si" as const, label: "සිංහල" },
-  { code: "ta" as const, label: "தமிழ்" },
-]
-
 export default function ChatPage() {
   const [language, setLanguage] = useState<SupportedLanguage>("en")
-  const [messages, setMessages] = useState<Message[]>(initialMessages)
+  const [messages, setMessages] = useState<Message[]>(() => [
+    buildWelcomeMessage("en"),
+  ])
   const [input, setInput] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -74,12 +73,18 @@ export default function ChatPage() {
     toggleListening,
   } = useVoiceInput(language)
 
+  const handleLanguageChange = (code: SupportedLanguage) => {
+    setLanguage(code)
+    setMessages([buildWelcomeMessage(code)])
+    setInput("")
+  }
+
   const handleMicClick = async () => {
     if (isTyping) return
     if (isListening) {
-      const text = await toggleListening()
-      if (text) {
-        setInput(text)
+      const result = await toggleListening()
+      if (result?.text) {
+        setInput(result.text)
         textareaRef.current?.focus()
         toast.success("Voice captured — press send or Enter")
       }
@@ -144,7 +149,7 @@ export default function ChatPage() {
   }
 
   const clearChat = () => {
-    setMessages(initialMessages)
+    setMessages([buildWelcomeMessage(language)])
   }
 
   return (
@@ -153,53 +158,48 @@ export default function ChatPage() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between mb-4"
+        className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
       >
         <div>
-          <div className="mb-1 flex items-center gap-2">
+          <div className="mb-1 flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="gap-1">
               <Sparkles className="h-3 w-3" />
-              OpenAI + Valsea voice
+              OpenAI + VALSEA.ai
+            </Badge>
+            <Badge variant="outline" className="text-xs">
+              15 Asian languages
             </Badge>
           </div>
           <h1 className="text-2xl font-bold text-foreground">AI Chat</h1>
           <p className="text-muted-foreground">
-            Your 24/7 intelligent farming assistant
+            Your 24/7 farming assistant — replies in the language you choose
           </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {languages.map((lang) => (
-              <button
-                key={lang.code}
-                type="button"
-                onClick={() => setLanguage(lang.code)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                  language === lang.code
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {lang.label}
-              </button>
-            ))}
-          </div>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreVertical className="h-5 w-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={clearChat}>
-              <Trash2 className="h-4 w-4 mr-2" />
-              Clear Chat
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Download className="h-4 w-4 mr-2" />
-              Export Chat
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <AsianLanguageSelect
+            value={language}
+            onChange={handleLanguageChange}
+            disabled={isTyping || isListening}
+            headerSubtitle="Chat & voice via VALSEA translation"
+          />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreVertical className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={clearChat}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Clear Chat
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Download className="h-4 w-4 mr-2" />
+                Export Chat
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </motion.div>
 
       {/* Chat Container */}
@@ -268,7 +268,11 @@ export default function ChatPage() {
                     <span className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "150ms" }} />
                     <span className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "300ms" }} />
                   </div>
-                  <span className="text-sm text-muted-foreground">OpenAI is thinking...</span>
+                  <span className="text-sm text-muted-foreground">
+                    {language === "en"
+                      ? "AgriMind is thinking..."
+                      : `Translating to ${getLanguageDisplayLabel(language)}…`}
+                  </span>
                 </div>
               </div>
             </motion.div>
@@ -309,7 +313,9 @@ export default function ChatPage() {
               placeholder={
                 isListening
                   ? "Listening… your speech appears here live"
-                  : "Ask anything about farming..."
+                  : language === "en"
+                    ? "Ask anything about farming..."
+                    : `Ask in ${getLanguageDisplayLabel(language)} or English…`
               }
               rows={1}
               className={`resize-none min-h-[44px] max-h-[120px] ${
