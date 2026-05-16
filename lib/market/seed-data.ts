@@ -1,0 +1,205 @@
+/** Sri Lanka wholesale market reference data (LKR) — updated via seed script */
+
+export interface MarketCropSeed {
+  name: string
+  nameSi: string
+  unit: string
+  price: number
+  previousPrice: number
+  location: string
+  market: string
+  demandLevel: "high" | "medium" | "low"
+  forecast: string
+  history: { label: string; price: number }[]
+}
+
+export const MARKET_LOCATIONS = [
+  { name: "Colombo", demand: "Very High", crops: ["Tomato", "Onion", "Carrot", "Coconut"] },
+  { name: "Kandy", demand: "High", crops: ["Rice", "Vegetables", "Potato"] },
+  { name: "Galle", demand: "Medium", crops: ["Coconut", "Banana", "Chili"] },
+  { name: "Dambulla", demand: "Very High", crops: ["Tomato", "Onion", "Cabbage", "Carrot"] },
+  { name: "Jaffna", demand: "High", crops: ["Onion", "Chili", "Grapes"] },
+]
+
+export const MARKET_CROP_SEEDS: MarketCropSeed[] = [
+  {
+    name: "Tomato",
+    nameSi: "තක්කාලි",
+    unit: "kg",
+    price: 280,
+    previousPrice: 255,
+    location: "Dambulla",
+    market: "Dambulla Economic Centre",
+    demandLevel: "high",
+    forecast: "Prices may rise 10–15% before weekend demand in Colombo.",
+    history: [
+      { label: "Jan", price: 220 },
+      { label: "Feb", price: 240 },
+      { label: "Mar", price: 200 },
+      { label: "Apr", price: 260 },
+      { label: "May", price: 280 },
+    ],
+  },
+  {
+    name: "Rice",
+    nameSi: "සහල්",
+    unit: "kg",
+    price: 145,
+    previousPrice: 150,
+    location: "Polonnaruwa",
+    market: "Polonnaruwa District",
+    demandLevel: "medium",
+    forecast: "Stable with Maha season harvest pressure.",
+    history: [
+      { label: "Jan", price: 150 },
+      { label: "Feb", price: 148 },
+      { label: "Mar", price: 152 },
+      { label: "Apr", price: 147 },
+      { label: "May", price: 145 },
+    ],
+  },
+  {
+    name: "Onion",
+    nameSi: "ලූනු",
+    unit: "kg",
+    price: 320,
+    previousPrice: 280,
+    location: "Jaffna",
+    market: "Jaffna Peninsula",
+    demandLevel: "high",
+    forecast: "Festival season may keep demand strong for 2–3 weeks.",
+    history: [
+      { label: "Jan", price: 280 },
+      { label: "Feb", price: 260 },
+      { label: "Mar", price: 290 },
+      { label: "Apr", price: 310 },
+      { label: "May", price: 320 },
+    ],
+  },
+  {
+    name: "Chili",
+    nameSi: "මිරිස්",
+    unit: "kg",
+    price: 850,
+    previousPrice: 880,
+    location: "Matale",
+    market: "Matale District",
+    demandLevel: "low",
+    forecast: "Increased supply from Kurunegala may soften prices.",
+    history: [
+      { label: "Jan", price: 900 },
+      { label: "Feb", price: 880 },
+      { label: "Mar", price: 850 },
+      { label: "Apr", price: 820 },
+      { label: "May", price: 850 },
+    ],
+  },
+  {
+    name: "Carrot",
+    nameSi: "කැරට්",
+    unit: "kg",
+    price: 220,
+    previousPrice: 210,
+    location: "Nuwara Eliya",
+    market: "Nuwara Eliya Farms",
+    demandLevel: "medium",
+    forecast: "Hotel sector demand steady in hill country.",
+    history: [
+      { label: "Jan", price: 190 },
+      { label: "Feb", price: 200 },
+      { label: "Mar", price: 205 },
+      { label: "Apr", price: 215 },
+      { label: "May", price: 220 },
+    ],
+  },
+  {
+    name: "Potato",
+    nameSi: "අල",
+    unit: "kg",
+    price: 180,
+    previousPrice: 180,
+    location: "Bandarawela",
+    market: "Uva Province",
+    demandLevel: "medium",
+    forecast: "Prices expected to remain stable this month.",
+    history: [
+      { label: "Jan", price: 175 },
+      { label: "Feb", price: 178 },
+      { label: "Mar", price: 182 },
+      { label: "Apr", price: 179 },
+      { label: "May", price: 180 },
+    ],
+  },
+  {
+    name: "Cabbage",
+    nameSi: "ගෝවා",
+    unit: "kg",
+    price: 95,
+    previousPrice: 110,
+    location: "Nuwara Eliya",
+    market: "Nuwara Eliya Farms",
+    demandLevel: "low",
+    forecast: "Oversupply from hill country may pressure prices.",
+    history: [
+      { label: "Jan", price: 110 },
+      { label: "Feb", price: 105 },
+      { label: "Mar", price: 100 },
+      { label: "Apr", price: 98 },
+      { label: "May", price: 95 },
+    ],
+  },
+  {
+    name: "Banana",
+    nameSi: "කෙසෙල්",
+    unit: "dozen",
+    price: 120,
+    previousPrice: 115,
+    location: "Embilipitiya",
+    market: "Southern Province",
+    demandLevel: "high",
+    forecast: "Export and local demand supporting prices.",
+    history: [
+      { label: "Jan", price: 110 },
+      { label: "Feb", price: 112 },
+      { label: "Mar", price: 115 },
+      { label: "Apr", price: 118 },
+      { label: "May", price: 120 },
+    ],
+  },
+  {
+    name: "Coconut",
+    nameSi: "පොල්",
+    unit: "nut",
+    price: 85,
+    previousPrice: 82,
+    location: "Kurunegala",
+    market: "North Western Province",
+    demandLevel: "medium",
+    forecast: "Copra demand stable; watch dry weather impact.",
+    history: [
+      { label: "Jan", price: 78 },
+      { label: "Feb", price: 80 },
+      { label: "Mar", price: 81 },
+      { label: "Apr", price: 83 },
+      { label: "May", price: 85 },
+    ],
+  },
+  {
+    name: "Tea",
+    nameSi: "තේ",
+    unit: "kg green leaf",
+    price: 95,
+    previousPrice: 92,
+    location: "Kandy",
+    market: "Regional buying centres",
+    demandLevel: "medium",
+    forecast: "Auction averages influence weekly leaf prices.",
+    history: [
+      { label: "Jan", price: 88 },
+      { label: "Feb", price: 90 },
+      { label: "Mar", price: 91 },
+      { label: "Apr", price: 93 },
+      { label: "May", price: 95 },
+    ],
+  },
+]

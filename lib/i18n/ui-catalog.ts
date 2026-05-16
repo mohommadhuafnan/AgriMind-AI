@@ -1,0 +1,216 @@
+/** English UI strings — sidebar, header, and shared forms */
+
+export const UI_CATALOG = {
+
+  "app.name": "AgriMind",
+
+  "app.tagline": "Your AI Farming Partner From Seed To Harvest",
+
+  "nav.dashboard": "Dashboard",
+
+  "nav.crops": "My Crops",
+
+  "nav.diagnosis": "AI Diagnosis",
+
+  "nav.diagnosisHistory": "Diagnosis History",
+
+  "nav.voice": "Voice Assistant",
+
+  "nav.market": "Market Prices",
+
+  "nav.weather": "Weather",
+
+  "nav.chat": "AI Chat",
+
+  "nav.reminders": "Reminders",
+
+  "nav.settings": "Settings",
+
+  "nav.profile": "Profile",
+
+  "nav.signOut": "Sign Out",
+
+  "header.search": "Search crops, diseases, guides...",
+
+  "header.notifications": "Notifications",
+
+  "lang.english": "English",
+
+  "lang.sinhala": "සිංහල",
+
+  "lang.tamil": "தமிழ்",
+
+  "common.loading": "Translating…",
+
+  "common.translateError": "Translation unavailable. Showing English.",
+
+  "common.saving": "Saving...",
+
+  "auth.signedOut": "Signed out successfully",
+
+  "crops.addTitle": "Add Crop",
+
+  "crops.addSubtitle": "Register a new field or crop plot.",
+
+  "crops.detailsTitle": "Crop details",
+
+  "crops.fieldName": "Field name",
+
+  "crops.cropType": "Crop type",
+
+  "crops.stage": "Stage",
+
+  "crops.health": "Health %",
+
+  "crops.status": "Status",
+
+  "crops.plantedDate": "Planted date",
+
+  "crops.expectedHarvest": "Expected harvest",
+
+  "crops.area": "Area",
+
+  "crops.unit": "Unit",
+
+  "crops.location": "Location",
+
+  "crops.nextTask": "Next task",
+
+  "crops.notes": "Notes",
+
+  "crops.selectCrop": "Select crop",
+
+  "crops.createCrop": "Create Crop",
+
+  "crops.saveCrop": "Save Crop",
+
+  "crops.fieldLocationPh": "Field location",
+
+  "crops.nextTaskPh": "Apply fertilizer",
+
+  "crops.status.healthy": "Healthy",
+
+  "crops.status.warning": "Warning",
+
+  "crops.status.critical": "Critical",
+
+  "crops.unit.acres": "Acres",
+
+  "crops.unit.hectares": "Hectares",
+
+  "crops.unit.perches": "Perches",
+
+  "crops.stage.preparation": "Preparation",
+
+  "crops.stage.planting": "Planting",
+
+  "crops.stage.growing": "Growing",
+
+  "crops.stage.flowering": "Flowering",
+
+  "crops.stage.fruiting": "Fruiting",
+
+  "crops.stage.harvesting": "Harvesting",
+
+  "landing.features": "Features",
+
+  "landing.howItWorks": "How It Works",
+
+  "landing.crops": "Crops",
+
+  "landing.testimonials": "Testimonials",
+
+  "landing.signIn": "Sign In",
+
+  "landing.getStarted": "Get Started",
+  "dashboard.welcomeSubtitle": "Your AI-powered farm overview — live data from MongoDB.",
+  "dashboard.scanCrop.title": "Scan Crop",
+  "dashboard.scanCrop.desc":
+    "Take a photo — AI detects diseases and suggests treatments instantly.",
+  "dashboard.scanCrop.cta": "Start diagnosis",
+  "dashboard.askAi.title": "Ask AI",
+  "dashboard.askAi.desc":
+    "Speak or type in Sinhala, Tamil, or English — get farming help in seconds.",
+  "dashboard.askAi.cta": "Open voice assistant",
+  "diagnosis.title": "AI Crop Diagnosis",
+  "diagnosis.subtitle":
+    "Upload a photo for GPT-4o vision analysis — disease, pests, nutrients, and treatment plans.",
+  "diagnosis.viewHistory": "View History",
+  "diagnosis.issueDetails": "Issue Details",
+  "diagnosis.cropType": "Crop Type",
+  "diagnosis.selectCrop": "Select crop type",
+  "diagnosis.otherCropPh": "Type crop name (optional)",
+  "diagnosis.describeProblem": "Describe the Problem",
+  "diagnosis.analyze": "Analyze with AI",
+  "diagnosis.analyzing": "Analyzing...",
+  "diagnosis.newDiagnosis": "New Diagnosis",
+  "diagnosis.notPlantTitle": "Not a plant photo",
+  "diagnosis.notPlantHint":
+    "Please upload a clear photo of your crop — leaves, stems, or fruit in natural light.",
+  "diagnosis.causeAnalysis": "Cause Analysis",
+  "diagnosis.symptoms": "Identified Symptoms",
+  "diagnosis.treatment": "AI Treatment Plan",
+  "diagnosis.prevention": "Prevention Tips",
+  "diagnosis.recovery": "Recovery Info",
+  "diagnosis.estimatedRecovery": "Estimated Recovery",
+  "diagnosis.treatmentCost": "Treatment Cost",
+  "diagnosis.videos": "Video Tutorials",
+  "diagnosis.severity": "Severity",
+  "diagnosis.confidence": "Confidence",
+  "diagnosis.translating": "Translating report…",
+
+} as const
+
+
+
+export type UiCatalogKey = keyof typeof UI_CATALOG
+
+
+
+export const UI_CATALOG_KEYS = Object.keys(UI_CATALOG) as UiCatalogKey[]
+
+
+
+/** Sidebar / shell navigation */
+
+export const SHELL_NAV_ITEMS = [
+
+  { key: "nav.dashboard" as const, href: "/dashboard", icon: "dashboard" },
+
+  { key: "nav.crops" as const, href: "/dashboard/crops", icon: "crops" },
+
+  { key: "nav.diagnosis" as const, href: "/dashboard/diagnosis", icon: "diagnosis" },
+
+  {
+
+    key: "nav.diagnosisHistory" as const,
+
+    href: "/dashboard/diagnosis/history",
+
+    icon: "history",
+
+  },
+
+  { key: "nav.voice" as const, href: "/dashboard/voice", icon: "voice" },
+
+  { key: "nav.market" as const, href: "/dashboard/market", icon: "market" },
+
+  { key: "nav.weather" as const, href: "/dashboard/weather", icon: "weather" },
+
+  { key: "nav.chat" as const, href: "/dashboard/chat", icon: "chat" },
+
+  { key: "nav.reminders" as const, href: "/dashboard/reminders", icon: "reminders" },
+
+] as const
+
+
+
+export const SHELL_BOTTOM_NAV_ITEMS = [
+
+  { key: "nav.settings" as const, href: "/dashboard/settings", icon: "settings" },
+
+  { key: "nav.profile" as const, href: "/dashboard/profile", icon: "profile" },
+
+] as const
+
+
