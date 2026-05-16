@@ -20,8 +20,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { PasswordStrengthMeter } from "@/components/auth/password-strength-meter"
 import { AuthInput } from "@/components/auth/auth-input"
-import type { AuthMode } from "@/components/auth/auth-types"
-import { authSpring } from "@/components/auth/auth-types"
+import type { AuthDirection, AuthMode } from "@/components/auth/auth-types"
+import { authSlideTransition, authSpring } from "@/components/auth/auth-types"
 import {
   signInWithEmail,
   signUpWithEmail,
@@ -34,26 +34,56 @@ import { cn } from "@/lib/utils"
 
 type AuthFormProps = {
   mode: AuthMode
+  direction?: AuthDirection
   onModeChange: (mode: AuthMode) => void
   embedded?: boolean
 }
 
 const fieldVariants = {
-  hidden: { opacity: 0, y: 14, filter: "blur(4px)" },
+  hidden: { opacity: 0, y: 12, filter: "blur(4px)" },
   show: (i: number) => ({
     opacity: 1,
     y: 0,
     filter: "blur(0px)",
     transition: {
-      delay: i * 0.07,
-      duration: 0.4,
+      delay: i * 0.06,
+      duration: 0.38,
       ease: [0.22, 1, 0.36, 1] as const,
     },
   }),
-  exit: { opacity: 0, y: -8, filter: "blur(4px)", transition: { duration: 0.2 } },
+  exit: { opacity: 0, y: -6, filter: "blur(4px)", transition: { duration: 0.18 } },
 }
 
-export function AuthForm({ mode, onModeChange, embedded = false }: AuthFormProps) {
+const formPanelVariants = {
+  enter: (direction: AuthDirection) => ({
+    opacity: 0,
+    x: direction > 0 ? 56 : -56,
+    filter: "blur(8px)",
+  }),
+  center: {
+    opacity: 1,
+    x: 0,
+    filter: "blur(0px)",
+    transition: {
+      ...authSlideTransition,
+      staggerChildren: 0.05,
+      delayChildren: 0.04,
+    },
+  },
+  exit: (direction: AuthDirection) => ({
+    opacity: 0,
+    x: direction > 0 ? -56 : 56,
+    filter: "blur(8px)",
+    transition: { duration: 0.28, ease: [0.22, 1, 0.36, 1] as const },
+  }),
+}
+
+export function AuthForm({
+  mode,
+  direction = 1,
+  onModeChange,
+  embedded = false,
+}: AuthFormProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("from") ?? "/dashboard"
@@ -145,18 +175,15 @@ export function AuthForm({ mode, onModeChange, embedded = false }: AuthFormProps
 
   const inner = (
     <>
-      <AnimatePresence mode="wait" custom={mode}>
+      <AnimatePresence mode="wait" custom={direction} initial={false}>
         <motion.div
           key={mode}
-          custom={mode}
-          initial="hidden"
-          animate="show"
+          custom={direction}
+          variants={formPanelVariants}
+          initial="enter"
+          animate="center"
           exit="exit"
-          variants={{
-            hidden: { opacity: 0 },
-            show: { opacity: 1, transition: { staggerChildren: 0.05 } },
-            exit: { opacity: 0, transition: { duration: 0.2 } },
-          }}
+          className="will-change-transform"
         >
           <motion.div variants={fieldVariants} custom={0} className="mb-6 text-center md:text-left">
             <motion.div
@@ -177,7 +204,7 @@ export function AuthForm({ mode, onModeChange, embedded = false }: AuthFormProps
           </motion.div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <AnimatePresence>
+            <AnimatePresence mode="popLayout" initial={false}>
               {mode === "signup" && (
                 <motion.div
                   key="name-field"
@@ -186,6 +213,7 @@ export function AuthForm({ mode, onModeChange, embedded = false }: AuthFormProps
                   initial="hidden"
                   animate="show"
                   exit="exit"
+                  layout
                 >
                   <AuthInput
                     id="name"
@@ -246,10 +274,16 @@ export function AuthForm({ mode, onModeChange, embedded = false }: AuthFormProps
               )}
             </motion.div>
 
-            {mode === "login" && (
+            <AnimatePresence mode="popLayout" initial={false}>
+              {mode === "login" && (
               <motion.div
+                key="remember-row"
                 variants={fieldVariants}
                 custom={3}
+                initial="hidden"
+                animate="show"
+                exit="exit"
+                layout
                 className="flex items-center justify-between"
               >
                 <div className="flex items-center gap-2">
@@ -270,9 +304,10 @@ export function AuthForm({ mode, onModeChange, embedded = false }: AuthFormProps
                   Forgot password?
                 </button>
               </motion.div>
-            )}
+              )}
+            </AnimatePresence>
 
-            <motion.div variants={fieldVariants} custom={mode === "login" ? 4 : 4}>
+            <motion.div variants={fieldVariants} custom={mode === "login" ? 4 : 4} layout>
               <motion.div
                 whileHover={{
                   scale: 1.02,
@@ -356,24 +391,28 @@ export function AuthForm({ mode, onModeChange, embedded = false }: AuthFormProps
             {mode === "login" ? (
               <>
                 Don&apos;t have an account?{" "}
-                <button
+                <motion.button
                   type="button"
                   onClick={() => onModeChange("signup")}
                   className="font-semibold text-primary hover:underline"
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
                 >
                   Sign up
-                </button>
+                </motion.button>
               </>
             ) : (
               <>
                 Already have an account?{" "}
-                <button
+                <motion.button
                   type="button"
                   onClick={() => onModeChange("login")}
                   className="font-semibold text-primary hover:underline"
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
                 >
                   Sign in
-                </button>
+                </motion.button>
               </>
             )}
           </motion.p>

@@ -64,7 +64,7 @@ export interface UpdateProfileInput {
   district?: string
   farmSize?: string
   primaryCrops?: string[]
-  preferredLanguage?: "en" | "si" | "ta"
+  preferredLanguage?: SupportedLanguage
   notificationPreferences?: NotificationPreferences
 }
 

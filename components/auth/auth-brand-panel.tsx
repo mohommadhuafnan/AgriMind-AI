@@ -2,7 +2,8 @@
 
 import { AnimatePresence, motion } from "framer-motion"
 import { Camera, Globe, Mic, Sparkles } from "lucide-react"
-import type { AuthMode } from "@/components/auth/auth-types"
+import type { AuthDirection, AuthMode } from "@/components/auth/auth-types"
+import { authSlideTransition } from "@/components/auth/auth-types"
 
 const features = [
   { icon: Mic, label: "Voice in 3 languages", sub: "Sinhala · Tamil · English" },
@@ -26,7 +27,13 @@ const copy = {
   },
 }
 
-export function AuthBrandPanel({ mode }: { mode: AuthMode }) {
+export function AuthBrandPanel({
+  mode,
+  direction,
+}: {
+  mode: AuthMode
+  direction: AuthDirection
+}) {
   const c = copy[mode]
 
   return (
@@ -62,13 +69,19 @@ export function AuthBrandPanel({ mode }: { mode: AuthMode }) {
       />
 
       <div className="relative z-10 min-h-[220px]">
-        <AnimatePresence mode="wait" initial={false}>
+        <AnimatePresence mode="wait" custom={direction} initial={false}>
           <motion.div
             key={mode}
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            custom={direction}
+            initial={{ opacity: 0, x: direction > 0 ? -36 : 36, y: 8 }}
+            animate={{ opacity: 1, x: 0, y: 0 }}
+            exit={{
+              opacity: 0,
+              x: direction > 0 ? 36 : -36,
+              y: -8,
+              transition: { duration: 0.28 },
+            }}
+            transition={authSlideTransition}
           >
             <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium backdrop-blur-md">
               <Sparkles className="h-3.5 w-3.5" />

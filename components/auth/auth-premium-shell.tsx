@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { ArrowLeft } from "lucide-react"
@@ -9,12 +9,18 @@ import { AuthCursorGlow } from "@/components/auth/auth-cursor-glow"
 import { AuthParticleField } from "@/components/auth/auth-particle-field"
 import { AuthBrandPanel } from "@/components/auth/auth-brand-panel"
 import { AuthForm } from "@/components/auth/auth-form"
-import type { AuthMode } from "@/components/auth/auth-types"
-import { authSpring } from "@/components/auth/auth-types"
+import type { AuthDirection, AuthMode } from "@/components/auth/auth-types"
+import { authPanelSpring, authSpring } from "@/components/auth/auth-types"
 import { cn } from "@/lib/utils"
 
 export function AuthPremiumShell() {
   const [mode, setMode] = useState<AuthMode>("login")
+  const [direction, setDirection] = useState<AuthDirection>(1)
+
+  const onModeChange = useCallback((next: AuthMode) => {
+    setDirection(next === "signup" ? 1 : -1)
+    setMode(next)
+  }, [])
 
   return (
     <motion.div
@@ -37,7 +43,7 @@ export function AuthPremiumShell() {
       <AuthCursorGlow />
       <AuthParticleField />
 
-      <div className="absolute left-4 right-4 top-4 z-30 flex items-center justify-between gap-2">
+      <motion.div className="absolute left-4 right-4 top-4 z-30 flex items-center justify-between gap-2">
         <Link
           href="/"
           className="flex items-center gap-2 rounded-full border border-border/60 bg-background/70 px-3 py-1.5 text-sm text-muted-foreground shadow-sm backdrop-blur-md transition-colors hover:text-foreground"
@@ -46,7 +52,7 @@ export function AuthPremiumShell() {
           <span className="hidden sm:inline">Back to home</span>
         </Link>
         <ThemeToggle className="rounded-full border border-border/60 bg-background/70 shadow-sm backdrop-blur-md" />
-      </div>
+      </motion.div>
 
       <motion.div
         className="relative z-10 flex min-h-screen items-center justify-center p-4 py-16 md:p-8"
@@ -54,32 +60,46 @@ export function AuthPremiumShell() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ ...authSpring, delay: 0.05 }}
       >
-        <div className="w-full max-w-[960px] overflow-hidden rounded-[28px] border border-white/20 bg-background/40 shadow-[0_32px_80px_-20px_oklch(0.2_0.05_145/0.45)] backdrop-blur-2xl dark:border-white/10 dark:bg-background/30">
-          <motion.div
-            className={cn(
-              "flex flex-col md:flex-row",
-              mode === "signup" && "md:flex-row-reverse"
-            )}
-            layout
-            transition={authSpring}
-          >
+        <motion.div
+          layout
+          className="w-full max-w-[960px] overflow-hidden rounded-[28px] border border-white/20 bg-background/40 shadow-[0_32px_80px_-20px_oklch(0.2_0.05_145/0.45)] backdrop-blur-2xl dark:border-white/10 dark:bg-background/30"
+          transition={authPanelSpring}
+        >
+          <div className="relative overflow-hidden">
             <motion.div
-              className="relative w-full md:w-[46%]"
-              layout="position"
-              transition={authSpring}
+              className={cn(
+                "flex flex-col md:flex-row",
+                mode === "signup" && "md:flex-row-reverse"
+              )}
+              layout
+              transition={authPanelSpring}
             >
-              <AuthBrandPanel mode={mode} />
-            </motion.div>
+              <motion.div
+                layoutId="auth-brand-panel"
+                className="relative w-full md:w-[46%]"
+                transition={authPanelSpring}
+              >
+                <AuthBrandPanel mode={mode} direction={direction} />
+              </motion.div>
 
-            <motion.div
-              className="relative w-full border-t border-border/40 bg-background/80 backdrop-blur-xl md:w-[54%] md:border-t-0 md:border-l"
-              layout="position"
-              transition={authSpring}
-            >
-              <AuthForm mode={mode} onModeChange={setMode} embedded />
+              <motion.div
+                layoutId="auth-form-panel"
+                className={cn(
+                  "relative w-full border-t border-border/40 bg-background/80 backdrop-blur-xl md:w-[54%] md:border-t-0",
+                  mode === "login" ? "md:border-l" : "md:border-r"
+                )}
+                transition={authPanelSpring}
+              >
+                <AuthForm
+                  mode={mode}
+                  direction={direction}
+                  onModeChange={onModeChange}
+                  embedded
+                />
+              </motion.div>
             </motion.div>
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
       </motion.div>
     </motion.div>
   )

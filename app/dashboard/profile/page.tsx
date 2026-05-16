@@ -7,16 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { PreferredLanguageSelect } from "@/components/i18n/preferred-language-select"
 import { useProfile } from "@/hooks/use-profile"
 import { SUPPORTED_CROPS } from "@/lib/constants"
+import { isSupportedLanguage } from "@/lib/i18n/languages"
+import type { SupportedLanguage } from "@/types"
 
 export default function ProfilePage() {
   const { profile, loading, updateProfile } = useProfile()
@@ -27,7 +23,7 @@ export default function ProfilePage() {
     district: "",
     farmSize: "",
     primaryCrops: [] as string[],
-    preferredLanguage: "en" as "en" | "si" | "ta",
+    preferredLanguage: "en" as SupportedLanguage,
   })
 
   useEffect(() => {
@@ -38,7 +34,11 @@ export default function ProfilePage() {
       district: String(profile.district ?? ""),
       farmSize: String(profile.farmSize ?? ""),
       primaryCrops: (profile.primaryCrops as string[]) ?? [],
-      preferredLanguage: (profile.preferredLanguage as "en" | "si" | "ta") ?? "en",
+      preferredLanguage:
+        profile.preferredLanguage &&
+        isSupportedLanguage(String(profile.preferredLanguage))
+          ? (profile.preferredLanguage as SupportedLanguage)
+          : "en",
     })
   }, [profile])
 
@@ -144,21 +144,16 @@ export default function ProfilePage() {
             </div>
             <div className="space-y-2">
               <Label>Preferred language</Label>
-              <Select
+              <p className="text-xs text-muted-foreground">
+                Powers AI chat, voice assistant, and VALSEA.ai translations
+              </p>
+              <PreferredLanguageSelect
                 value={form.preferredLanguage}
-                onValueChange={(v) =>
-                  setForm({ ...form, preferredLanguage: v as "en" | "si" | "ta" })
+                onChange={(preferredLanguage) =>
+                  setForm({ ...form, preferredLanguage })
                 }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="si">සිංහල</SelectItem>
-                  <SelectItem value="ta">தமிழ்</SelectItem>
-                </SelectContent>
-              </Select>
+                disabled={saving}
+              />
             </div>
             <div className="space-y-2">
               <Label>Primary crops</Label>

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
+import { isSupportedLanguage } from "@/lib/i18n/languages"
 import { getSessionUser } from "@/lib/auth/session"
+import type { SupportedLanguage } from "@/types"
 import {
   getUserByFirebaseUid,
   updateUserProfile,
@@ -33,13 +35,18 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json()
+    const preferredLanguage: SupportedLanguage | undefined =
+      body.preferredLanguage && isSupportedLanguage(body.preferredLanguage)
+        ? body.preferredLanguage
+        : undefined
+
     const user = await updateUserProfile(session.uid, {
       displayName: body.displayName,
       phone: body.phone,
       district: body.district,
       farmSize: body.farmSize,
       primaryCrops: body.primaryCrops,
-      preferredLanguage: body.preferredLanguage,
+      preferredLanguage,
       notificationPreferences: body.notificationPreferences,
     })
 
