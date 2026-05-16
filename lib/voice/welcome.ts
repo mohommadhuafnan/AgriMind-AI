@@ -1,6 +1,9 @@
 import { getAsianLanguage } from "@/lib/i18n/languages"
 import type { SupportedLanguage } from "@/types"
 
+const WELCOME_AUTO =
+  "Speak in any language — Tamil, Sinhala, English, and more. AgriMind detects your language automatically and replies in the same language with voice."
+
 const WELCOME_BY_CODE: Partial<Record<SupportedLanguage, string>> = {
   en: "Hello! Tap the microphone and ask your farming question. VALSEA.ai understands your voice; AgriMind replies with audio.",
   si: "ආයුබෝවන්! මයික්‍රොෆෝනය ඔබා ගොවිතැන් ප්‍රශ්නය අහන්න. VALSEA.ai ඔබේ කථනය අවබෝධ කරයි.",
@@ -12,7 +15,11 @@ const WELCOME_BY_CODE: Partial<Record<SupportedLanguage, string>> = {
   ko: "안녕하세요! 마이크를 눌러 농업 질문을 하세요. VALSEA.ai가 음성을 이해합니다.",
 }
 
-export function getVoiceWelcomeMessage(code: SupportedLanguage): string {
+export function getVoiceWelcomeMessage(
+  code: SupportedLanguage | "auto"
+): string {
+  if (code === "auto") return WELCOME_AUTO
+
   const specific = WELCOME_BY_CODE[code]
   if (specific) return specific
 

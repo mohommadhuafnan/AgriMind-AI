@@ -15,7 +15,9 @@ export async function POST(request: Request) {
 
     const formData = await request.formData()
     const file = formData.get("file")
-    const language = (formData.get("language") as SupportedLanguage) ?? "en"
+    const rawLang = (formData.get("language") as string) ?? "auto"
+    const language =
+      rawLang === "auto" ? "auto" : ((rawLang as SupportedLanguage) ?? "en")
 
     if (!file || !(file instanceof Blob)) {
       return NextResponse.json(

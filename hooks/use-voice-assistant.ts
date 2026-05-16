@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
+import { voiceAssistantErrorMessage } from "@/lib/voice/friendly-error"
 import { speakText, stopSpeaking, preloadVoices } from "@/lib/voice/tts"
 import type { ChatMessageInput } from "@/types/ai"
 import type { SupportedLanguage } from "@/types"
@@ -13,6 +14,12 @@ export interface VoiceUiMessage {
   transcript?: string
   timestamp: Date
   streaming?: boolean
+  error?: boolean
+}
+
+export type VoiceTurnResult = {
+  reply: string | null
+  error?: string
 }
 
 export function useVoiceAssistant(language: SupportedLanguage) {
@@ -33,9 +40,9 @@ export function useVoiceAssistant(language: SupportedLanguage) {
   }, [])
 
   const speak = useCallback(
-    (text: string) => {
+    (text: string, turnLanguage?: SupportedLanguage) => {
       cancelSpeakRef.current?.()
-      cancelSpeakRef.current = speakText(text, language, {
+      cancelSpeakRef.current = speakText(text, turnLanguage ?? language, {
         onStart: () => setIsSpeaking(true),
         onEnd: () => setIsSpeaking(false),
         onError: () => setIsSpeaking(false),
@@ -76,12 +83,13 @@ export function useVoiceAssistant(language: SupportedLanguage) {
     async (
       message: string,
       history: ChatMessageInput[],
+      turnLanguage: SupportedLanguage,
       onDelta: (text: string) => void
     ): Promise<string | null> => {
       const res = await fetch("/api/ai/assist/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, language, history }),
+        body: JSON.stringify({ message, language: turnLanguage, history }),
       })
 
       if (!res.ok || !res.body) {
@@ -128,6 +136,7 @@ export function useVoiceAssistant(language: SupportedLanguage) {
     async (
       userContent: string,
       assistantContent: string,
+      turnLanguage: SupportedLanguage,
       transcript?: string
     ) => {
       const res = await fetch("/api/voice/save-turn", {
@@ -135,7 +144,7 @@ export function useVoiceAssistant(language: SupportedLanguage) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           conversationId,
-          language,
+          language: turnLanguage,
           userMessage: { content: userContent, transcript },
           assistantMessage: { content: assistantContent },
         }),
@@ -145,7 +154,7 @@ export function useVoiceAssistant(language: SupportedLanguage) {
         setConversationId(json.data.conversationId)
       }
     },
-    [conversationId, language]
+    [conversationId]
   )
 
   const processTurn = useCallback(
@@ -154,20 +163,27 @@ export function useVoiceAssistant(language: SupportedLanguage) {
       history: ChatMessageInput[],
       options?: {
         transcript?: string
+        language?: SupportedLanguage
         onAssistantUpdate?: (content: string, streaming: boolean) => void
       }
-    ): Promise<string | null> => {
+    ): Promise<VoiceTurnResult> => {
+      const turnLanguage = options?.language ?? language
       setIsProcessing(true)
       try {
         if (useStreaming) {
           options?.onAssistantUpdate?.("", true)
-          const reply = await streamReply(message, history, (partial) => {
-            options?.onAssistantUpdate?.(partial, true)
-          })
+          const reply = await streamReply(
+            message,
+            history,
+            turnLanguage,
+            (partial) => {
+              options?.onAssistantUpdate?.(partial, true)
+            }
+          )
           if (!reply) throw new Error("Empty response")
           options?.onAssistantUpdate?.(reply, false)
-          await persistTurn(message, reply, options?.transcript)
-          return reply
+          await persistTurn(message, reply, turnLanguage, options?.transcript)
+          return { reply }
         }
 
         const res = await fetch("/api/voice/turn", {
@@ -175,7 +191,7 @@ export function useVoiceAssistant(language: SupportedLanguage) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             message,
-            language,
+            language: turnLanguage,
             conversationId,
             transcript: options?.transcript,
             history,
@@ -184,10 +200,10 @@ export function useVoiceAssistant(language: SupportedLanguage) {
         const json = await res.json()
         if (!res.ok) throw new Error(json.error ?? "Assistant request failed")
         setConversationId(json.data.conversationId)
-        return json.data.reply as string
+        return { reply: json.data.reply as string }
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Could not get AI response")
-        return null
+        const raw = err instanceof Error ? err.message : undefined
+        return { reply: null, error: voiceAssistantErrorMessage(raw) }
       } finally {
         setIsProcessing(false)
       }

@@ -1,8 +1,20 @@
 import { getAsianLanguage } from "@/lib/i18n/languages"
 import type { SupportedLanguage } from "@/types"
 
+const MAX_TTS_CHARS = 4096
+
 function speechLang(code: SupportedLanguage): string {
   return getAsianLanguage(code)?.bcp47 ?? "en-US"
+}
+
+function truncateForTts(text: string): string {
+  const trimmed = text.trim()
+  if (trimmed.length <= MAX_TTS_CHARS) return trimmed
+  return `${trimmed.slice(0, MAX_TTS_CHARS - 1)}…`
+}
+
+function ttsCacheKey(text: string, language: SupportedLanguage): string {
+  return `${language}:${truncateForTts(text)}`
 }
 
 type SpeakCallbacks = {
@@ -11,8 +23,16 @@ type SpeakCallbacks = {
   onError?: () => void
 }
 
+type TtsCacheEntry = {
+  key: string
+  objectUrl: string
+}
+
 let activeAudio: HTMLAudioElement | null = null
 let activeObjectUrl: string | null = null
+let ttsCache: TtsCacheEntry | null = null
+let ttsInflight: { key: string; promise: Promise<TtsCacheEntry | null> } | null =
+  null
 
 function revokeActiveAudio() {
   if (activeAudio) {
@@ -20,11 +40,80 @@ function revokeActiveAudio() {
     activeAudio.src = ""
     activeAudio = null
   }
-  if (activeObjectUrl) {
+  if (
+    activeObjectUrl &&
+    activeObjectUrl !== ttsCache?.objectUrl
+  ) {
     URL.revokeObjectURL(activeObjectUrl)
-    activeObjectUrl = null
   }
+  activeObjectUrl = null
   window.speechSynthesis?.cancel()
+}
+
+function clearTtsCache() {
+  if (ttsCache) {
+    URL.revokeObjectURL(ttsCache.objectUrl)
+    ttsCache = null
+  }
+}
+
+async function fetchTtsBlob(
+  text: string,
+  language: SupportedLanguage,
+  signal?: AbortSignal
+): Promise<Blob | null> {
+  const res = await fetch("/api/voice/speak", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: truncateForTts(text), language }),
+    signal,
+  })
+  if (!res.ok) return null
+  const blob = await res.blob()
+  return blob.size > 0 ? blob : null
+}
+
+async function loadTtsCache(
+  text: string,
+  language: SupportedLanguage,
+  signal?: AbortSignal
+): Promise<TtsCacheEntry | null> {
+  const key = ttsCacheKey(text, language)
+  if (ttsCache?.key === key) return ttsCache
+
+  if (ttsInflight?.key === key) {
+    return ttsInflight.promise
+  }
+
+  const promise = (async () => {
+    const blob = await fetchTtsBlob(text, language, signal)
+    if (!blob) return null
+    clearTtsCache()
+    const entry: TtsCacheEntry = {
+      key,
+      objectUrl: URL.createObjectURL(blob),
+    }
+    ttsCache = entry
+    return entry
+  })()
+
+  ttsInflight = { key, promise }
+  try {
+    return await promise
+  } finally {
+    if (ttsInflight?.key === key) ttsInflight = null
+  }
+}
+
+/** Start loading voice audio while the reply is still finishing */
+export function prefetchSpeech(
+  text: string,
+  language: SupportedLanguage
+): void {
+  if (typeof window === "undefined" || !text.trim()) return
+  const key = ttsCacheKey(text, language)
+  if (ttsCache?.key === key || ttsInflight?.key === key) return
+  void loadTtsCache(text, language)
 }
 
 export function pickVoiceForLanguage(
@@ -55,7 +144,7 @@ function speakWithBrowser(
   }
 
   window.speechSynthesis.cancel()
-  const utterance = new SpeechSynthesisUtterance(text)
+  const utterance = new SpeechSynthesisUtterance(truncateForTts(text))
   utterance.lang = speechLang(language)
   utterance.rate = language === "en" ? 0.95 : 0.9
   utterance.pitch = 1
@@ -70,27 +159,16 @@ function speakWithBrowser(
   window.speechSynthesis.speak(utterance)
 }
 
-async function speakWithOpenAI(
-  text: string,
-  language: SupportedLanguage,
+function playAudioUrl(
+  url: string,
   callbacks?: SpeakCallbacks,
-  signal?: AbortSignal
+  ownsBlobUrl = true
 ): Promise<boolean> {
-  const res = await fetch("/api/voice/speak", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, language }),
-    signal,
-  })
-
-  if (!res.ok) return false
-
-  const blob = await res.blob()
-  if (!blob.size) return false
-
   revokeActiveAudio()
-  activeObjectUrl = URL.createObjectURL(blob)
-  activeAudio = new Audio(activeObjectUrl)
+  if (ownsBlobUrl) {
+    activeObjectUrl = url
+  }
+  activeAudio = new Audio(url)
 
   return new Promise((resolve) => {
     if (!activeAudio) {
@@ -100,28 +178,57 @@ async function speakWithOpenAI(
 
     const audio = activeAudio
 
+    const cleanup = () => {
+      if (activeAudio === audio) {
+        activeAudio.pause()
+        activeAudio = null
+      }
+      if (ownsBlobUrl && activeObjectUrl === url) {
+        URL.revokeObjectURL(url)
+        activeObjectUrl = null
+      }
+    }
+
     audio.onplay = () => callbacks?.onStart?.()
     audio.onended = () => {
-      revokeActiveAudio()
+      cleanup()
       callbacks?.onEnd?.()
       resolve(true)
     }
     audio.onerror = () => {
-      revokeActiveAudio()
+      cleanup()
       callbacks?.onError?.()
       resolve(false)
     }
 
     audio.play().catch(() => {
-      revokeActiveAudio()
+      cleanup()
       callbacks?.onError?.()
       resolve(false)
     })
   })
 }
 
+async function speakWithOpenAI(
+  text: string,
+  language: SupportedLanguage,
+  callbacks?: SpeakCallbacks,
+  signal?: AbortSignal
+): Promise<boolean> {
+  const cached = await loadTtsCache(text, language, signal)
+  if (cached) {
+    return playAudioUrl(cached.objectUrl, callbacks, false)
+  }
+
+  const blob = await fetchTtsBlob(text, language, signal)
+  if (!blob) return false
+
+  const url = URL.createObjectURL(blob)
+  return playAudioUrl(url, callbacks, true)
+}
+
 /**
- * Speak text — OpenAI TTS first (natural voice), browser Speech Synthesis as fallback.
+ * Speak text — uses prefetched audio when available for faster playback.
  */
 export function speakText(
   text: string,

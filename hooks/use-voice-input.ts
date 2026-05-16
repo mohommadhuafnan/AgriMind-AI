@@ -7,6 +7,11 @@ import {
   isBrowserSpeechRecognitionSupported,
   supportsLiveBrowserStt,
 } from "@/lib/voice/speech-recognition"
+import {
+  AUTO_DETECT_LANGUAGE,
+  isAutoDetectLanguage,
+  type VoiceLanguagePreference,
+} from "@/lib/i18n/languages"
 import type { SupportedLanguage } from "@/types"
 
 type VoiceInputOptions = {
@@ -17,10 +22,14 @@ type VoiceInputOptions = {
 const MIN_RECORDING_BYTES = 400
 
 /** Mic: live typing when browser STT works; always records audio for VALSEA on stop */
-export function useVoiceInput(language: SupportedLanguage) {
+export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
   const [isRecording, setIsRecording] = useState(false)
   const [isTranscribing, setIsTranscribing] = useState(false)
-  const realtime = useRealtimeSpeechInput(language)
+  const sttLanguage: SupportedLanguage = isAutoDetectLanguage(languagePreference)
+    ? "en"
+    : languagePreference
+
+  const realtime = useRealtimeSpeechInput(sttLanguage)
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -30,14 +39,19 @@ export function useVoiceInput(language: SupportedLanguage) {
   const skipTranscribeRef = useRef(false)
   const optionsRef = useRef<VoiceInputOptions>({})
 
+  const transcribeLanguage: SupportedLanguage | "auto" =
+    isAutoDetectLanguage(languagePreference) ? AUTO_DETECT_LANGUAGE : languagePreference
+
   const liveSttEnabled =
-    isBrowserSpeechRecognitionSupported() && supportsLiveBrowserStt(language)
+    !isAutoDetectLanguage(languagePreference) &&
+    isBrowserSpeechRecognitionSupported() &&
+    supportsLiveBrowserStt(languagePreference)
 
   const transcribeBlob = useCallback(
     async (blob: Blob): Promise<string | null> => {
       const formData = new FormData()
       formData.append("file", blob, "recording.webm")
-      formData.append("language", language)
+      formData.append("language", transcribeLanguage)
 
       const res = await fetch("/api/valsea/transcribe", {
         method: "POST",
@@ -47,7 +61,7 @@ export function useVoiceInput(language: SupportedLanguage) {
       if (!res.ok) throw new Error(json.error ?? "Transcription failed")
       return json.data?.text ?? null
     },
-    [language]
+    [transcribeLanguage]
   )
 
   const releaseStream = useCallback(() => {

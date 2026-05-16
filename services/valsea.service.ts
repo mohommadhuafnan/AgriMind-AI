@@ -30,7 +30,7 @@ export async function transcribeAudio(
 
   file: Blob,
 
-  language: SupportedLanguage,
+  language: SupportedLanguage | "auto",
 
   filename?: string
 
@@ -42,7 +42,7 @@ export async function transcribeAudio(
 
     filename,
 
-    language: toValseaLanguage(language),
+    language: language === "auto" ? "auto" : toValseaLanguage(language),
 
   })
 

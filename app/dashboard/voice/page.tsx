@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import {
   Volume2,
   VolumeX,
@@ -37,11 +37,19 @@ import { VoiceMessageActions } from "@/components/dashboard/voice/voice-message-
 import { VoiceLanguageSelect } from "@/components/dashboard/voice/voice-language-select"
 import { WhatsAppSupportButton } from "@/components/dashboard/whatsapp-support-button"
 import { getVoiceWelcomeMessage } from "@/lib/voice/welcome"
+import { prefetchSpeech } from "@/lib/voice/tts"
 import { toast } from "sonner"
 import type { SupportedLanguage } from "@/types"
 import type { ChatMessageInput } from "@/types/ai"
 import { formatDistanceToNow } from "date-fns"
-import { isSupportedLanguage } from "@/lib/i18n/languages"
+import {
+  AUTO_DETECT_LANGUAGE,
+  getLanguageDisplayLabel,
+  isAutoDetectLanguage,
+  isSupportedLanguage,
+  type VoiceLanguagePreference,
+} from "@/lib/i18n/languages"
+import { detectUserLanguage } from "@/lib/voice/detect-language"
 
 const quickPrompts = [
   "My tomato leaves are turning yellow",
@@ -61,7 +69,12 @@ function toHistory(messages: VoiceUiMessage[]): ChatMessageInput[] {
 }
 
 export default function VoiceAssistantPage() {
-  const [language, setLanguage] = useState<SupportedLanguage>("en")
+  const [languageMode, setLanguageMode] =
+    useState<VoiceLanguagePreference>(AUTO_DETECT_LANGUAGE)
+  const [activeLanguage, setActiveLanguage] = useState<SupportedLanguage>("en")
+  const [lastDetected, setLastDetected] = useState<SupportedLanguage | null>(
+    null
+  )
   const [textInput, setTextInput] = useState("")
   const [isMuted, setIsMuted] = useState(false)
   const [audioLevel, setAudioLevel] = useState(0)
@@ -72,14 +85,26 @@ export default function VoiceAssistantPage() {
     {
       id: "welcome",
       role: "assistant",
-      content: getVoiceWelcomeMessage("en"),
+      content: getVoiceWelcomeMessage(AUTO_DETECT_LANGUAGE),
       timestamp: new Date(),
     },
   ])
 
+  const messagesScrollRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const assistantIdRef = useRef<string | null>(null)
+
+  const scrollToLatest = useCallback((behavior: ScrollBehavior = "auto") => {
+    requestAnimationFrame(() => {
+      const container = messagesScrollRef.current
+      if (container) {
+        container.scrollTo({ top: container.scrollHeight, behavior })
+        return
+      }
+      messagesEndRef.current?.scrollIntoView({ behavior, block: "end" })
+    })
+  }, [])
 
   const {
     isProcessing,
@@ -92,7 +117,7 @@ export default function VoiceAssistantPage() {
     loadConversation,
     startNewConversation,
     conversationId,
-  } = useVoiceAssistant(language)
+  } = useVoiceAssistant(activeLanguage)
 
   const {
     isListening,
@@ -100,14 +125,21 @@ export default function VoiceAssistantPage() {
     isLiveTypingSupported,
     startListening,
     stopListening,
-  } = useVoiceInput(language)
+  } = useVoiceInput(languageMode)
 
   const { conversations, loading: historyLoading, refresh, remove } =
     useVoiceConversations()
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+    const streaming = messages.some((m) => m.streaming)
+    scrollToLatest(streaming ? "auto" : "smooth")
+  }, [messages, scrollToLatest])
+
+  useEffect(() => {
+    if (!isProcessing) {
+      scrollToLatest("smooth")
+    }
+  }, [isProcessing, scrollToLatest])
 
   useEffect(() => {
     if (!isSpeaking) setSpeakingId(null)
@@ -128,19 +160,26 @@ export default function VoiceAssistantPage() {
       {
         id: "welcome",
         role: "assistant",
-        content: getVoiceWelcomeMessage(language),
+        content: getVoiceWelcomeMessage(languageMode),
         timestamp: new Date(),
       },
     ])
+    setLastDetected(null)
+    if (!isAutoDetectLanguage(languageMode)) {
+      setActiveLanguage(languageMode)
+    }
     startNewConversation()
-  }, [language, startNewConversation])
+  }, [languageMode, startNewConversation])
 
-  const fetchFollowUps = async (reply: string) => {
+  const fetchFollowUps = async (
+    reply: string,
+    turnLanguage: SupportedLanguage
+  ) => {
     try {
       const res = await fetch("/api/voice/follow-ups", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reply, language }),
+        body: JSON.stringify({ reply, language: turnLanguage }),
       })
       const json = await res.json()
       if (res.ok) setFollowUps(json.data ?? [])
@@ -154,9 +193,29 @@ export default function VoiceAssistantPage() {
     setSpeakingId(null)
   }
 
+  const resolveTurnLanguage = async (
+    text: string
+  ): Promise<SupportedLanguage> => {
+    if (!isAutoDetectLanguage(languageMode)) {
+      return languageMode
+    }
+    const detected = await detectUserLanguage(text)
+    setLastDetected(detected)
+    setActiveLanguage(detected)
+    return detected
+  }
+
   const runTurn = async (userText: string, transcript?: string) => {
     handleStopVoice()
     setFollowUps([])
+
+    const turnLanguage = await resolveTurnLanguage(userText)
+    if (isAutoDetectLanguage(languageMode)) {
+      toast.message(
+        `Detected ${getLanguageDisplayLabel(turnLanguage)} — replying in your language`,
+        { duration: 2800 }
+      )
+    }
     const userMsg: VoiceUiMessage = {
       id: `u-${Date.now()}`,
       role: "user",
@@ -165,6 +224,7 @@ export default function VoiceAssistantPage() {
       timestamp: new Date(),
     }
     setMessages((prev) => [...prev, userMsg])
+    scrollToLatest("auto")
 
     const assistantId = `a-${Date.now()}`
     assistantIdRef.current = assistantId
@@ -178,37 +238,59 @@ export default function VoiceAssistantPage() {
         streaming: true,
       },
     ])
+    scrollToLatest("auto")
 
     const history = toHistory(messages)
-    const reply = await processTurn(userText, history, {
+    const { reply, error } = await processTurn(userText, history, {
       transcript,
+      language: turnLanguage,
       onAssistantUpdate: (content, streaming) => {
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantId ? { ...m, content, streaming } : m
           )
         )
+        if (!streaming && content.trim() && !isMuted) {
+          prefetchSpeech(content, turnLanguage)
+        }
+        if (!streaming) {
+          scrollToLatest("auto")
+        }
       },
     })
 
     if (!reply) {
-      setMessages((prev) => prev.filter((m) => m.id !== assistantId))
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? {
+                ...m,
+                content: error ?? "Sorry, I couldn't answer right now.",
+                streaming: false,
+                error: true,
+              }
+            : m
+        )
+      )
+      scrollToLatest("auto")
       return
     }
 
     setMessages((prev) =>
       prev.map((m) =>
         m.id === assistantId
-          ? { ...m, content: reply, streaming: false }
+          ? { ...m, content: reply, streaming: false, error: false }
           : m
       )
     )
+    scrollToLatest("auto")
 
     if (!isMuted) {
+      prefetchSpeech(reply, turnLanguage)
       setSpeakingId(assistantId)
-      speak(reply)
+      speak(reply, turnLanguage)
     }
-    void fetchFollowUps(reply)
+    void fetchFollowUps(reply, turnLanguage)
     refresh()
   }
 
@@ -263,9 +345,10 @@ export default function VoiceAssistantPage() {
   const handleLoadConversation = async (id: string) => {
     try {
       const data = await loadConversation(id)
-      setLanguage(
-        isSupportedLanguage(data.language) ? data.language : "en"
-      )
+      const loaded = isSupportedLanguage(data.language) ? data.language : "en"
+      setLanguageMode(loaded)
+      setActiveLanguage(loaded)
+      setLastDetected(loaded)
       setMessages(
         data.messages.map((m, i) => ({
           id: `${id}-${i}`,
@@ -291,7 +374,7 @@ export default function VoiceAssistantPage() {
       {
         id: "welcome",
         role: "assistant",
-        content: getVoiceWelcomeMessage(language),
+        content: getVoiceWelcomeMessage(languageMode),
         timestamp: new Date(),
       },
     ])
@@ -307,7 +390,7 @@ export default function VoiceAssistantPage() {
       : isSpeaking
         ? "AI voice playing — tap Stop voice to interrupt"
         : isProcessing
-          ? "AgriMind is thinking… voice plays when the answer is ready"
+          ? "AgriMind is thinking… voice starts quickly when the answer is ready"
           : "Tap green mic to speak · tap red to convert to text · then Send"
 
   return (
@@ -318,7 +401,9 @@ export default function VoiceAssistantPage() {
           <div className="mb-2 flex flex-wrap gap-2">
             <Badge variant="secondary" className="gap-1">
               <Sparkles className="h-3 w-3" />
-              {isLiveTypingSupported
+              {isAutoDetectLanguage(languageMode)
+              ? "Auto language detect"
+              : isLiveTypingSupported
                 ? "Live speech → text"
                 : "VALSEA voice → text"}
             </Badge>
@@ -333,13 +418,21 @@ export default function VoiceAssistantPage() {
           </div>
           <h1 className="text-2xl font-bold text-foreground">Voice Assistant</h1>
           <p className="text-muted-foreground">
-            Multilingual farming help powered by VALSEA.ai — 15+ Asian languages
+            Speak in any language — AgriMind detects it and replies in the same
+            language
+            {lastDetected && isAutoDetectLanguage(languageMode) && (
+              <span className="text-primary">
+                {" "}
+                (last detected: {getLanguageDisplayLabel(lastDetected)})
+              </span>
+            )}
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-end">
           <VoiceLanguageSelect
-            value={language}
-            onChange={setLanguage}
+            value={languageMode}
+            onChange={setLanguageMode}
+            detectedLanguage={lastDetected}
             disabled={isProcessing || isListening}
           />
           <Button
@@ -361,7 +454,10 @@ export default function VoiceAssistantPage() {
       </motion.div>
 
       <div className="mx-4 mb-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm sm:mx-6">
-        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-8">
+        <div
+          ref={messagesScrollRef}
+          className="min-h-0 flex-1 overflow-y-auto scroll-smooth p-4 sm:p-8"
+        >
           <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
               {messages.map((message) => (
                 <div
@@ -372,14 +468,20 @@ export default function VoiceAssistantPage() {
                     className={`max-w-[min(100%,42rem)] rounded-2xl px-5 py-4 shadow-sm ${
                       message.role === "user"
                         ? "bg-primary text-primary-foreground rounded-tr-md"
-                        : "border border-border bg-muted/50 rounded-tl-md"
+                        : message.error
+                          ? "border border-amber-500/40 bg-amber-500/10 rounded-tl-md"
+                          : "border border-border bg-muted/50 rounded-tl-md"
                     }`}
                   >
                     {message.role === "assistant" && (
                       <div className="mb-1 flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 text-primary" />
-                        <span className="text-xs font-medium text-primary">
-                          AgriMind AI
+                        <Sparkles
+                          className={`h-4 w-4 ${message.error ? "text-amber-600" : "text-primary"}`}
+                        />
+                        <span
+                          className={`text-xs font-medium ${message.error ? "text-amber-700 dark:text-amber-400" : "text-primary"}`}
+                        >
+                          {message.error ? "Notice" : "AgriMind AI"}
                         </span>
                         {message.streaming && (
                           <Loader2 className="h-3 w-3 animate-spin text-primary" />
@@ -399,13 +501,14 @@ export default function VoiceAssistantPage() {
                     {message.role === "assistant" &&
                       message.content &&
                       !message.streaming &&
+                      !message.error &&
                       message.id !== "welcome" && (
                         <VoiceMessageActions
                           content={message.content}
                           isSpeaking={speakingId === message.id && isSpeaking}
                           onSpeak={() => {
                             setSpeakingId(message.id)
-                            speak(message.content)
+                            speak(message.content, activeLanguage)
                           }}
                           onStop={handleStopVoice}
                         />
@@ -431,7 +534,7 @@ export default function VoiceAssistantPage() {
                   </div>
                 </div>
               ))}
-              <div ref={messagesEndRef} />
+              <motion.div ref={messagesEndRef} className="h-px shrink-0" aria-hidden="true" />
           </div>
         </div>
 

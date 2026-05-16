@@ -39,6 +39,18 @@ export const ASIAN_LANGUAGES: readonly AsianLanguage[] = [
 
 export type SupportedLanguage = (typeof ASIAN_LANGUAGES)[number]["code"]
 
+/** Voice UI: let VALSEA detect spoken language automatically */
+export const AUTO_DETECT_LANGUAGE = "auto" as const
+export type VoiceLanguagePreference =
+  | SupportedLanguage
+  | typeof AUTO_DETECT_LANGUAGE
+
+export function isAutoDetectLanguage(
+  value: string
+): value is typeof AUTO_DETECT_LANGUAGE {
+  return value === AUTO_DETECT_LANGUAGE
+}
+
 export const SUPPORTED_LANGUAGE_CODES: SupportedLanguage[] = ASIAN_LANGUAGES.map(
   (l) => l.code as SupportedLanguage
 )
@@ -62,6 +74,19 @@ export function isSupportedLanguage(code: string): code is SupportedLanguage {
 
 export function toValseaLanguageName(code: string): string {
   return getAsianLanguage(code)?.valsea ?? code
+}
+
+export function fromValseaLanguageName(name?: string): SupportedLanguage | null {
+  if (!name?.trim()) return null
+  const key = name.toLowerCase().trim()
+  const match = ASIAN_LANGUAGES.find(
+    (l) =>
+      l.valsea === key ||
+      l.code === key ||
+      l.label.toLowerCase() === key ||
+      l.nativeLabel.toLowerCase() === key
+  )
+  return match ? (match.code as SupportedLanguage) : null
 }
 
 export function getLanguageDisplayLabel(code: string): string {
