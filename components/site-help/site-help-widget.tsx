@@ -3,14 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { usePathname } from "next/navigation"
 import { AnimatePresence, motion } from "framer-motion"
-import {
-  Bot,
-  Loader2,
-  MessageCircle,
-  Send,
-  X,
-  Minimize2,
-} from "lucide-react"
+import { Bot, Loader2, Leaf, Send, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -46,6 +39,7 @@ export function SiteHelpWidget() {
     { id: "welcome", role: "assistant", content: WELCOME },
   ])
   const endRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const { sendMessage, isLoading } = useSiteHelpChat()
 
   const isDashboard = pathname.startsWith("/dashboard")
@@ -99,10 +93,13 @@ export function SiteHelpWidget() {
       <AnimatePresence>
         {open && (
           <motion.div
+            ref={panelRef}
             initial={{ opacity: 0, y: 16, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.96 }}
             transition={{ duration: 0.2 }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
             className="flex w-[min(100vw-2rem,380px)] flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl"
           >
             <div className="flex items-center gap-3 border-b border-border bg-primary px-4 py-3 text-primary-foreground">
@@ -131,9 +128,9 @@ export function SiteHelpWidget() {
                 size="icon"
                 className="h-8 w-8 shrink-0 text-primary-foreground hover:bg-primary-foreground/15"
                 onClick={() => setOpen(false)}
-                aria-label="Minimize chat"
+                aria-label="Close help chat"
               >
-                <Minimize2 className="h-4 w-4" />
+                <X className="h-4 w-4" />
               </Button>
             </div>
 
@@ -224,25 +221,24 @@ export function SiteHelpWidget() {
         )}
       </AnimatePresence>
 
-      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-        <Button
-          type="button"
-          size="lg"
-          className={cn(
-            "h-14 w-14 rounded-full shadow-lg",
-            open && "bg-muted text-foreground hover:bg-muted/80"
-          )}
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          aria-label={open ? "Close help chat" : "Open help chat"}
-        >
-          {open ? (
-            <X className="h-6 w-6" />
-          ) : (
-            <MessageCircle className="h-6 w-6" />
-          )}
-        </Button>
-      </motion.div>
+      {!open && (
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <Button
+            type="button"
+            size="lg"
+            className="relative h-14 w-14 rounded-full bg-gradient-to-br from-primary to-emerald-600 shadow-lg shadow-primary/25 hover:from-primary hover:to-emerald-500"
+            onClick={() => setOpen(true)}
+            aria-expanded={false}
+            aria-label="Open help chat"
+          >
+            <Leaf className="h-6 w-6" />
+            <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-60" />
+              <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-emerald-400 ring-2 ring-background" />
+            </span>
+          </Button>
+        </motion.div>
+      )}
     </motion.div>
   )
 }
