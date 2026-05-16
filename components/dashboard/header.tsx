@@ -19,7 +19,10 @@ type DashboardHeaderProps = {
 function HeaderActions({ compact = false }: { compact?: boolean }) {
   return (
     <div
-      className={cn("flex shrink-0 items-center", compact ? "gap-0.5" : "gap-1")}
+      className={cn(
+        "flex shrink-0 items-center",
+        compact ? "gap-0.5" : "gap-1 sm:gap-1.5"
+      )}
     >
       {!compact && (
         <div className="hidden sm:block">
@@ -40,8 +43,9 @@ export function DashboardHeader({ onOpenMobileMenu }: DashboardHeaderProps) {
     <header
       key={language}
       data-no-translate
-      className="sticky top-0 z-30 border-b border-border bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-background/80"
+      className="sticky top-0 z-30 w-full border-b border-border bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-background/80"
     >
+      {/* Mobile & tablet: compact two-row header */}
       <div className="lg:hidden">
         <div className="flex h-12 items-center gap-2 px-3">
           <Button
@@ -70,12 +74,15 @@ export function DashboardHeader({ onOpenMobileMenu }: DashboardHeaderProps) {
         </div>
       </div>
 
-      <div className="mx-auto hidden h-16 max-w-[1440px] items-center gap-4 px-6 lg:flex">
-        <LiveDateTime
-          variant="compact"
-          className="shrink-0 border-r border-border pr-4"
-        />
-        <AnimatedSearchInput className="max-w-lg flex-1" />
+      {/* Laptop & desktop: classic single-row toolbar */}
+      <div className="mx-auto hidden h-14 w-full max-w-[1440px] items-center gap-3 px-4 sm:h-16 sm:gap-4 sm:px-5 lg:flex lg:px-6">
+        <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
+          <LiveDateTime
+            variant="compact"
+            className="shrink-0 border-r border-border pr-3 sm:pr-4"
+          />
+          <AnimatedSearchInput className="min-w-0 flex-1 max-w-none lg:max-w-2xl" />
+        </div>
         <HeaderActions />
       </div>
     </header>
