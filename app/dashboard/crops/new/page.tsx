@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
@@ -8,12 +9,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CropForm } from "@/components/dashboard/crop-form"
 import { useCrops } from "@/hooks/use-crops"
 import { useLanguage } from "@/contexts/language-context"
+import {
+  FARM_CROP_SEEDS,
+  farmCropSeedToFormValues,
+} from "@/lib/crops/seed-data"
 import { toast } from "sonner"
 
 export default function NewCropPage() {
   const router = useRouter()
   const { createCrop } = useCrops()
   const { t } = useLanguage()
+  const [formKey, setFormKey] = useState(0)
+  const [formInitial, setFormInitial] = useState<Record<string, unknown> | undefined>()
+
+  const loadTemplate = (index: number) => {
+    const seed = FARM_CROP_SEEDS[index]
+    if (!seed) return
+    setFormInitial(farmCropSeedToFormValues(seed))
+    setFormKey((k) => k + 1)
+    toast.message(`Loaded ${seed.cropType} template`)
+  }
 
   return (
     <div className="max-w-2xl space-y-6" data-no-translate>
@@ -30,11 +45,29 @@ export default function NewCropPage() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="space-y-3">
           <CardTitle>{t("crops.detailsTitle")}</CardTitle>
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">{t("crops.sampleTemplates")}</p>
+            <div className="flex flex-wrap gap-2">
+              {FARM_CROP_SEEDS.map((seed, index) => (
+                <Button
+                  key={seed.name}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => loadTemplate(index)}
+                >
+                  {seed.cropType}
+                </Button>
+              ))}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <CropForm
+            key={formKey}
+            initial={formInitial}
             submitLabelKey="crops.createCrop"
             onSubmit={async (data) => {
               try {

@@ -12,6 +12,7 @@
     "start": "next start",
     "lint": "eslint .",
     "seed:market": "npx tsx --env-file=.env.local scripts/seed-market.ts",
+    "seed:crops": "npx tsx --env-file=.env.local scripts/seed-crops.ts",
     "db:inspect": "npx tsx --env-file=.env.local scripts/inspect-db.ts"
   },
   "dependencies": {

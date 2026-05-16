@@ -53,5 +53,21 @@ export function useCrops() {
     await fetchCrops()
   }
 
-  return { crops, loading, fetchCrops, createCrop, updateCrop, deleteCrop }
+  const seedSampleCrops = async () => {
+    const res = await fetch("/api/crops/seed", { method: "POST" })
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error ?? "Failed to add sample crops")
+    await fetchCrops()
+    return json.data as { created: number; skipped: number }
+  }
+
+  return {
+    crops,
+    loading,
+    fetchCrops,
+    createCrop,
+    updateCrop,
+    deleteCrop,
+    seedSampleCrops,
+  }
 }

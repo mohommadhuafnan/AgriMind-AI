@@ -112,6 +112,13 @@ export const UI_CATALOG = {
 
   "crops.stage.harvesting": "Harvesting",
 
+  "crops.sampleCrops": "Add 5 sample crops",
+
+  "crops.sampleCropsHint":
+    "Loads realistic Sri Lankan plots (tomato, rice, onion, chili, coconut) with up-to-date dates.",
+
+  "crops.sampleTemplates": "Or fill the form from a template:",
+
   "landing.features": "Features",
 
   "landing.howItWorks": "How It Works",

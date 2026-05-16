@@ -1,3 +1,7 @@
+import {
+  FARM_CROP_SEEDS,
+  resolveFarmCropDates,
+} from "@/lib/crops/seed-data"
 import { connectDB } from "@/lib/mongodb"
 import Crop, { type ICrop } from "@/models/Crop"
 import CropLifecycleEvent from "@/models/CropLifecycleEvent"
@@ -144,6 +148,58 @@ export async function addLifecycleEvent(input: {
     ...input,
     completed: false,
   })
+}
+
+export async function seedSampleCropsForUser(firebaseUid: string): Promise<{
+  created: number
+  skipped: number
+  crops: ICrop[]
+}> {
+  await connectDB()
+  const existing = await Crop.find({ firebaseUid, isArchived: false })
+    .select("name")
+    .lean()
+  const existingNames = new Set(existing.map((c) => c.name))
+
+  const crops: ICrop[] = []
+  let created = 0
+  let skipped = 0
+
+  for (const seed of FARM_CROP_SEEDS) {
+    if (existingNames.has(seed.name)) {
+      skipped++
+      continue
+    }
+
+    const { plantedDate, expectedHarvestDate, nextTaskDate } =
+      resolveFarmCropDates(seed)
+
+    const crop = await createCrop({
+      firebaseUid,
+      name: seed.name,
+      cropType: seed.cropType,
+      variety: seed.variety,
+      stage: seed.stage,
+      health: seed.health,
+      plantedDate,
+      expectedHarvestDate,
+      area: seed.area,
+      areaUnit: seed.areaUnit,
+      location: seed.location,
+      status: seed.status,
+      waterLevel: seed.waterLevel,
+      sunExposure: seed.sunExposure,
+      nextTask: seed.nextTask,
+      nextTaskDate,
+      notes: seed.notes,
+    })
+
+    crops.push(crop)
+    existingNames.add(seed.name)
+    created++
+  }
+
+  return { created, skipped, crops }
 }
 
 export async function getCropStats(firebaseUid: string) {
