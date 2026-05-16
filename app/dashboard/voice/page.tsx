@@ -221,25 +221,28 @@ export default function VoiceAssistantPage() {
 
     if (isListening) {
       const text = await stopListening()
-      if (text) setTextInput(text)
+      const finalText = (text ?? textInput).trim()
+      setTextInput(finalText)
       textareaRef.current?.focus()
-      toast.message("Your words are in the box — edit if needed, then tap Send", {
-        duration: 3500,
-      })
+      if (!finalText) {
+        toast.error(
+          "No speech detected. Check your microphone, speak clearly, then tap the red button again."
+        )
+      } else {
+        toast.message("Text ready — edit if needed, then tap Send", {
+          duration: 3500,
+        })
+      }
       return
     }
 
     handleStopVoice()
-    await startListening({
+    const started = await startListening({
       initialText: textInput,
       onTextChange: setTextInput,
     })
+    if (!started) return
     textareaRef.current?.focus()
-    if (!isLiveTypingSupported) {
-      toast.message("Recording… tap the mic again when finished speaking", {
-        duration: 3000,
-      })
-    }
   }
 
   const handleTextSubmit = async () => {
@@ -296,16 +299,16 @@ export default function VoiceAssistantPage() {
   }
 
   const statusText = isTranscribing
-    ? "Transcribing your voice…"
+    ? "Converting your voice to text…"
     : isListening
       ? isLiveTypingSupported
-        ? "Listening — your words type live in the box below"
-        : "Recording — tap the green button again when done"
+        ? "Green = listening — words type live below. Red = stop and finish text"
+        : "Recording — speak, then tap the red button to get text"
       : isSpeaking
         ? "AI voice playing — tap Stop voice to interrupt"
         : isProcessing
           ? "AgriMind is thinking… voice plays when the answer is ready"
-          : "Tap the green mic to speak, or type below and press Send"
+          : "Tap green mic to speak · tap red to convert to text · then Send"
 
   return (
     <motion.div className="-m-6 flex min-h-[calc(100dvh-4rem)] w-[calc(100%+3rem)] flex-col">
@@ -509,16 +512,20 @@ export default function VoiceAssistantPage() {
                   value={textInput}
                   onChange={(e) => setTextInput(e.target.value)}
                   placeholder={
-                    isListening
+                    isTranscribing
+                      ? "Converting speech to text…"
+                      : isListening
                       ? isLiveTypingSupported
                         ? "Speak now — words appear here as you talk…"
-                        : "Recording… tap mic again when finished"
+                        : "Recording… tap the red button when finished"
                       : isProcessing
                         ? "Waiting for AI answer…"
                         : "Type your question or use the microphone above…"
                   }
                   rows={3}
-                  disabled={isProcessing && !isListening}
+                  disabled={
+                    isTranscribing || (isProcessing && !isListening)
+                  }
                   className={`min-h-[88px] resize-none text-base ${
                     isListening
                       ? "border-primary ring-2 ring-primary/30 bg-primary/5"

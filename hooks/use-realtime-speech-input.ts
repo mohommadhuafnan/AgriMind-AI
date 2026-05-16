@@ -3,19 +3,19 @@
 import { useCallback, useRef, useState } from "react"
 import { toast } from "sonner"
 import {
+  browserSttLangForCode,
   createSpeechRecognition,
   isBrowserSpeechRecognitionSupported,
   joinSpokenText,
-  speechLangForCode,
   type BrowserSpeechRecognition,
 } from "@/lib/voice/speech-recognition"
 import type { SupportedLanguage } from "@/types"
 
 export interface RealtimeSpeechOptions {
-  /** Text already in the input before speaking */
   initialText?: string
-  /** Called whenever transcript updates (interim + final) */
   onTextChange: (text: string) => void
+  /** Skip getUserMedia when the parent hook already opened the mic */
+  micAlreadyGranted?: boolean
 }
 
 export function useRealtimeSpeechInput(language: SupportedLanguage) {
@@ -36,31 +36,29 @@ export function useRealtimeSpeechInput(language: SupportedLanguage) {
   }, [])
 
   const start = useCallback(
-    async (options: RealtimeSpeechOptions) => {
-      if (!supported) {
-        toast.error(
-          "Live speech typing needs Chrome or Edge. Try updating your browser."
-        )
-        return false
-      }
+    async (options: RealtimeSpeechOptions): Promise<boolean> => {
+      if (!supported) return false
 
       const recognition = createSpeechRecognition()
       if (!recognition) return false
 
-      try {
-        await navigator.mediaDevices.getUserMedia({ audio: true })
-      } catch {
-        toast.error("Microphone access denied.")
-        return false
+      if (!options.micAlreadyGranted) {
+        try {
+          await navigator.mediaDevices.getUserMedia({ audio: true })
+        } catch {
+          toast.error("Microphone access denied.")
+          return false
+        }
       }
 
       baseTextRef.current = options.initialText?.trim() ?? ""
+      latestTextRef.current = baseTextRef.current
       onChangeRef.current = options.onTextChange
       keepAliveRef.current = true
 
       recognition.continuous = true
       recognition.interimResults = true
-      recognition.lang = speechLangForCode(language)
+      recognition.lang = browserSttLangForCode(language)
 
       recognition.onresult = (event: SpeechRecognitionEvent) => {
         let sessionFinal = ""
@@ -88,7 +86,10 @@ export function useRealtimeSpeechInput(language: SupportedLanguage) {
       }
 
       recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        if (event.error === "aborted" || event.error === "no-speech") return
+        if (event.error === "aborted") return
+        if (event.error === "no-speech") {
+          return
+        }
         if (event.error === "not-allowed") {
           toast.error("Microphone permission denied.")
         } else if (event.error !== "network") {
@@ -112,10 +113,17 @@ export function useRealtimeSpeechInput(language: SupportedLanguage) {
       }
 
       recognitionRef.current = recognition
-      recognition.start()
-      setIsListening(true)
-      applyDisplay(baseTextRef.current)
-      return true
+
+      try {
+        recognition.start()
+        setIsListening(true)
+        applyDisplay(baseTextRef.current)
+        return true
+      } catch {
+        recognitionRef.current = null
+        keepAliveRef.current = false
+        return false
+      }
     },
     [applyDisplay, language, supported]
   )
@@ -137,7 +145,29 @@ export function useRealtimeSpeechInput(language: SupportedLanguage) {
         settled = true
         recognitionRef.current = null
         setIsListening(false)
-        resolve(latestTextRef.current.trim())
+        const text = latestTextRef.current.trim()
+        applyDisplay(text)
+        resolve(text)
+      }
+
+      const prevOnResult = recognition.onresult
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
+        prevOnResult?.(event)
+        let sessionFinal = ""
+        let sessionInterim = ""
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i]
+          const transcript = result[0]?.transcript ?? ""
+          if (result.isFinal) sessionFinal += transcript
+          else sessionInterim += transcript
+        }
+        if (sessionFinal.trim()) {
+          baseTextRef.current = joinSpokenText(
+            baseTextRef.current,
+            sessionFinal
+          )
+        }
+        applyDisplay(joinSpokenText(baseTextRef.current, sessionInterim))
       }
 
       recognition.onend = finish
@@ -147,15 +177,13 @@ export function useRealtimeSpeechInput(language: SupportedLanguage) {
         finish()
       }
 
-      window.setTimeout(finish, 1200)
+      window.setTimeout(finish, 2500)
     })
-  }, [])
+  }, [applyDisplay])
 
   const toggle = useCallback(
     async (options: RealtimeSpeechOptions): Promise<string | null> => {
-      if (isListening) {
-        return stop()
-      }
+      if (isListening) return stop()
       const ok = await start(options)
       return ok ? null : null
     },

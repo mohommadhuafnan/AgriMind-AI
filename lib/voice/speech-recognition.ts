@@ -36,6 +36,31 @@ export function speechLangForCode(code: SupportedLanguage | string): string {
   return getAsianLanguage(code)?.bcp47 ?? "en-US"
 }
 
+/** Languages where Chrome/Edge live speech-to-text works reliably */
+const LIVE_BROWSER_STT = new Set([
+  "en",
+  "hi",
+  "id",
+  "ms",
+  "th",
+  "vi",
+  "zh",
+  "ko",
+  "ja",
+])
+
+export function supportsLiveBrowserStt(code: SupportedLanguage | string): boolean {
+  return LIVE_BROWSER_STT.has(code)
+}
+
+/** BCP-47 tag for Web Speech API (fallback to en-US when live STT is weak) */
+export function browserSttLangForCode(code: SupportedLanguage | string): string {
+  if (supportsLiveBrowserStt(code)) {
+    return speechLangForCode(code)
+  }
+  return speechLangForCode("en")
+}
+
 export function joinSpokenText(base: string, addition: string): string {
   const a = base.trim()
   const b = addition.trim()
