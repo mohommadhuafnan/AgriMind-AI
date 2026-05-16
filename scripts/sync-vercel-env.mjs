@@ -35,12 +35,12 @@ function parseEnvFile(content) {
 function addEnv(key, value, env) {
   const result = spawnSync(
     "vercel",
-    ["env", "add", key, env, "--force", "--yes"],
+    ["env", "add", key, env, "--value", value, "--force", "--yes"],
     {
-      input: value,
       encoding: "utf8",
       cwd: root,
       stdio: ["pipe", "pipe", "pipe"],
+      shell: process.platform === "win32",
     }
   )
   if (result.status !== 0) {

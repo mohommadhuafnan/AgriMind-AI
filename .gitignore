@@ -18,3 +18,4 @@ agrimind-ait4d*.json
 node_modules
 .next/
 .DS_Store
+.vercel
