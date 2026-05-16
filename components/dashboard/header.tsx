@@ -1,13 +1,13 @@
 "use client"
 
-import { Search, Menu } from "lucide-react"
+import { Menu } from "lucide-react"
+import { AnimatedSearchInput } from "@/components/dashboard/animated-search-input"
 import { NotificationDropdown } from "@/components/dashboard/notification-dropdown"
 import { DashboardProfileMenu } from "@/components/dashboard/dashboard-profile-menu"
 import { LiveDateTime } from "@/components/dashboard/live-datetime"
 import { LanguagePicker } from "@/components/i18n/language-picker"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { useLanguage } from "@/contexts/language-context"
 
 type DashboardHeaderProps = {
@@ -15,7 +15,7 @@ type DashboardHeaderProps = {
 }
 
 export function DashboardHeader({ onOpenMobileMenu }: DashboardHeaderProps) {
-  const { t, language } = useLanguage()
+  const { language } = useLanguage()
 
   return (
     <header
@@ -36,14 +36,7 @@ export function DashboardHeader({ onOpenMobileMenu }: DashboardHeaderProps) {
         </Button>
 
         <div className="min-w-0 flex-1">
-          <div className="relative mx-auto hidden max-w-md lg:block">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder={t("header.search")}
-              className="h-10 border-0 bg-muted/60 pl-9"
-            />
-          </div>
+          <AnimatedSearchInput className="mx-auto hidden max-w-md lg:block" />
           <p className="truncate text-sm font-semibold text-foreground lg:hidden">
             AgriMind AI
           </p>

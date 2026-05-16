@@ -21,15 +21,17 @@ import {
   DiagnosisActivityChart,
 } from "@/components/dashboard/charts/dashboard-charts"
 import { DashboardPrimaryActions } from "@/components/dashboard/dashboard-primary-actions"
-import { LiveDateTime } from "@/components/dashboard/live-datetime"
+import { DashboardQuickStats } from "@/components/dashboard/dashboard-quick-stats"
 import { useLanguage } from "@/contexts/language-context"
 import { getGreetingKey } from "@/lib/datetime/greeting"
+import { useLiveClock } from "@/hooks/use-live-clock"
 import { formatDistanceToNow } from "date-fns"
 
 export default function DashboardPage() {
   const { sessionUser } = useAuth()
   const { t } = useLanguage()
   const { data, loading } = useDashboard()
+  const { time, shortDate } = useLiveClock()
   const firstName = sessionUser?.displayName?.split(" ")[0] ?? "Farmer"
 
   const cropStats = (data?.cropStats as Record<string, number>) ?? {}
@@ -88,6 +90,12 @@ export default function DashboardPage() {
         className="flex flex-col gap-4 rounded-2xl border border-border bg-gradient-to-br from-primary/5 via-background to-background p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
       >
         <div className="min-w-0 space-y-1">
+          <p
+            className="text-xs font-medium tabular-nums text-primary sm:text-sm"
+            data-no-translate
+          >
+            {shortDate} · {time}
+          </p>
           <h1 className="text-xl font-bold text-foreground sm:text-2xl lg:text-3xl">
             {t(getGreetingKey())}, {firstName}!
           </h1>
@@ -95,7 +103,15 @@ export default function DashboardPage() {
             {t("dashboard.welcomeSubtitle")}
           </p>
         </div>
-        <LiveDateTime variant="card" className="w-full shrink-0 sm:w-auto" />
+        <DashboardQuickStats
+          className="w-full shrink-0 sm:w-auto"
+          cropTotal={Number(cropStats.total ?? 0)}
+          cropHealthy={Number(cropStats.healthy ?? 0)}
+          alerts={unread}
+          diagnoses={Number(data?.diagnosisCount ?? 0)}
+          weatherTemp={weather.temp ?? "—"}
+          weatherCondition={weather.condition ?? "—"}
+        />
       </motion.div>
 
       <DashboardPrimaryActions />
