@@ -48,6 +48,21 @@ export function SiteHelpWidget() {
     endRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, open])
 
+  useEffect(() => {
+    if (!open) return
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false)
+    }
+
+    document.addEventListener("keydown", onKeyDown)
+    return () => document.removeEventListener("keydown", onKeyDown)
+  }, [open])
+
+  function closeChat() {
+    setOpen(false)
+  }
+
   async function handleSend(text?: string) {
     const trimmed = (text ?? input).trim()
     if (!trimmed || isLoading) return
@@ -83,25 +98,39 @@ export function SiteHelpWidget() {
   }
 
   return (
-    <motion.div
-      className={cn(
-        "fixed right-4 z-[60] flex flex-col items-end gap-3",
-        isDashboard ? "bottom-20 lg:bottom-6" : "bottom-6"
-      )}
-      data-no-translate
-    >
+    <>
       <AnimatePresence>
         {open && (
-          <motion.div
-            ref={panelRef}
-            initial={{ opacity: 0, y: 16, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.96 }}
-            transition={{ duration: 0.2 }}
-            onPointerDown={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-            className="flex w-[min(100vw-2rem,380px)] flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl"
-          >
+          <motion.button
+            type="button"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-[59] cursor-default bg-black/20 backdrop-blur-[1px]"
+            aria-label="Close help chat"
+            onClick={closeChat}
+          />
+        )}
+      </AnimatePresence>
+
+      <div
+        className={cn(
+          "fixed right-4 z-[60] flex flex-col items-end gap-3",
+          isDashboard ? "bottom-20 lg:bottom-6" : "bottom-6"
+        )}
+        data-no-translate
+      >
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              ref={panelRef}
+              initial={{ opacity: 0, y: 16, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.96 }}
+              transition={{ duration: 0.2 }}
+              className="flex w-[min(100vw-2rem,380px)] flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl"
+            >
             <div className="flex items-center gap-3 border-b border-border bg-primary px-4 py-3 text-primary-foreground">
               <motion.div
                 animate={{ rotate: [0, 8, -8, 0] }}
@@ -127,7 +156,7 @@ export function SiteHelpWidget() {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 shrink-0 text-primary-foreground hover:bg-primary-foreground/15"
-                onClick={() => setOpen(false)}
+                onClick={closeChat}
                 aria-label="Close help chat"
               >
                 <X className="h-4 w-4" />
@@ -217,28 +246,29 @@ export function SiteHelpWidget() {
                 <Send className="h-4 w-4" />
               </Button>
             </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {!open && (
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              type="button"
+              size="lg"
+              className="relative h-14 w-14 rounded-full bg-gradient-to-br from-primary to-emerald-600 shadow-lg shadow-primary/25 hover:from-primary hover:to-emerald-500"
+              onClick={() => setOpen(true)}
+              aria-expanded={false}
+              aria-label="Open help chat"
+            >
+              <Leaf className="h-6 w-6" />
+              <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-60" />
+                <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-emerald-400 ring-2 ring-background" />
+              </span>
+            </Button>
           </motion.div>
         )}
-      </AnimatePresence>
-
-      {!open && (
-        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <Button
-            type="button"
-            size="lg"
-            className="relative h-14 w-14 rounded-full bg-gradient-to-br from-primary to-emerald-600 shadow-lg shadow-primary/25 hover:from-primary hover:to-emerald-500"
-            onClick={() => setOpen(true)}
-            aria-expanded={false}
-            aria-label="Open help chat"
-          >
-            <Leaf className="h-6 w-6" />
-            <span className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-60" />
-              <span className="relative inline-flex h-3.5 w-3.5 rounded-full bg-emerald-400 ring-2 ring-background" />
-            </span>
-          </Button>
-        </motion.div>
-      )}
-    </motion.div>
+      </div>
+    </>
   )
 }
