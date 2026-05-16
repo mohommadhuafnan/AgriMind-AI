@@ -2,6 +2,7 @@ import { connectDB } from "@/lib/mongodb"
 import DiagnosisReport, { type IDiagnosisReport } from "@/models/DiagnosisReport"
 import { createReminder } from "@/services/reminder.service"
 import { createNotification } from "@/services/notification.service"
+import { sanitizeImageUrlForDb } from "@/lib/images/parse-data-uri"
 import type { CropDiagnosisResult } from "@/types/ai"
 import type { SupportedLanguage } from "@/types"
 import type { ReminderPriority } from "@/types/crop"
@@ -19,7 +20,7 @@ export async function saveDiagnosisReport(params: {
     firebaseUid: params.firebaseUid,
     cropType: params.cropType,
     description: params.description,
-    imageUrl: params.imageUrl,
+    imageUrl: sanitizeImageUrlForDb(params.imageUrl),
     language: params.language,
     disease: params.diagnosis.disease,
     confidence: params.diagnosis.confidence,

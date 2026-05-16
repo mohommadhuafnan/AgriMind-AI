@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server"
 import { getSessionUser } from "@/lib/auth/session"
+import { sanitizeImageUrlForDb } from "@/lib/images/parse-data-uri"
 import {
   getCropById,
   updateCrop,
   archiveCrop,
   getLifecycleEvents,
 } from "@/services/crop.service"
+import {
+  isImageStorageConfigured,
+  uploadImageFromBase64,
+} from "@/services/upload.service"
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -39,8 +44,20 @@ export async function PATCH(request: Request, { params }: Params) {
 
     const { id } = await params
     const body = await request.json()
+
+    let imageUrl = sanitizeImageUrlForDb(body.imageUrl)
+    if (body.imageBase64?.trim() && isImageStorageConfigured()) {
+      const uploaded = await uploadImageFromBase64(body.imageBase64.trim(), {
+        folder: "agrimind/crops",
+        userId: session.uid,
+      })
+      imageUrl = sanitizeImageUrlForDb(uploaded.url)
+    }
+
+    const { imageBase64: _drop, ...rest } = body as Record<string, unknown>
     const crop = await updateCrop(session.uid, id, {
-      ...body,
+      ...rest,
+      imageUrl,
       plantedDate: body.plantedDate ? new Date(body.plantedDate) : undefined,
       expectedHarvestDate: body.expectedHarvestDate
         ? new Date(body.expectedHarvestDate)

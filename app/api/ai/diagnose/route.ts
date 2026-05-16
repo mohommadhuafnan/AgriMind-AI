@@ -2,8 +2,12 @@ import { NextResponse } from "next/server"
 import { getSessionUser } from "@/lib/auth/session"
 import { diagnoseCrop } from "@/services/ai.service"
 import { saveDiagnosisReport } from "@/services/diagnosis.service"
-import { uploadCropImage } from "@/services/upload.service"
+import {
+  isImageStorageConfigured,
+  uploadImageFromBase64,
+} from "@/services/upload.service"
 import { createNotification } from "@/services/notification.service"
+import { sanitizeImageUrlForDb } from "@/lib/images/parse-data-uri"
 import type { SupportedLanguage } from "@/types"
 
 export async function POST(request: Request) {
@@ -39,21 +43,45 @@ export async function POST(request: Request) {
     }
 
     const lang: SupportedLanguage = language ?? "en"
-
     const trimmedImage = imageBase64.trim()
+
+    let imageUrl: string | undefined
+    let storageProvider: string | undefined
+
+    if (isImageStorageConfigured()) {
+      try {
+        const uploaded = await uploadImageFromBase64(trimmedImage, {
+          folder: "agrimind/diagnosis",
+          userId: user.uid,
+        })
+        imageUrl = sanitizeImageUrlForDb(uploaded.url)
+        storageProvider = uploaded.provider
+      } catch (uploadErr) {
+        console.error("[ai/diagnose] upload failed:", uploadErr)
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              uploadErr instanceof Error
+                ? uploadErr.message
+                : "Could not upload image to cloud storage",
+          },
+          { status: 503 }
+        )
+      }
+    } else {
+      console.warn(
+        "[ai/diagnose] No image storage configured — diagnosis runs but photo will not appear in history"
+      )
+    }
+
     const diagnosis = await diagnoseCrop({
       imageBase64: trimmedImage,
+      imageUrl,
       cropType: cropType.trim(),
       description: description?.trim(),
       language: lang,
     })
-
-    let imageUrl: string | undefined
-    try {
-      imageUrl = (await uploadCropImage(trimmedImage)) ?? undefined
-    } catch {
-      /* Cloudinary optional */
-    }
 
     const report = await saveDiagnosisReport({
       firebaseUid: user.uid,
@@ -81,6 +109,7 @@ export async function POST(request: Request) {
         ...diagnosis,
         reportId: String(report._id),
         imageUrl,
+        storageProvider,
       },
     })
   } catch (error) {

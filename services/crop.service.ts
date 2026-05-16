@@ -23,6 +23,7 @@ export interface CreateCropInput {
   nextTask?: string
   nextTaskDate?: Date
   notes?: string
+  imageUrl?: string
 }
 
 export async function listCrops(firebaseUid: string): Promise<ICrop[]> {

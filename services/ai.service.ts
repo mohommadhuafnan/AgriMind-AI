@@ -26,6 +26,7 @@ export function streamFarmingAssistantReply(
 
 export async function diagnoseCrop(params: {
   imageBase64: string
+  imageUrl?: string
   cropType: string
   description?: string
   language: SupportedLanguage

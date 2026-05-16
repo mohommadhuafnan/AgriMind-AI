@@ -166,6 +166,8 @@ export async function analyzeCropImage(params: {
 
   imageBase64: string
 
+  imageUrl?: string
+
   cropType: string
 
   description?: string
@@ -178,11 +180,12 @@ export async function analyzeCropImage(params: {
 
 
 
-  const imageUrl = params.imageBase64.startsWith("data:")
-
-    ? params.imageBase64
-
-    : `data:image/jpeg;base64,${params.imageBase64}`
+  const visionImageUrl =
+    params.imageUrl?.startsWith("http")
+      ? params.imageUrl
+      : params.imageBase64.startsWith("data:")
+        ? params.imageBase64
+        : `data:image/jpeg;base64,${params.imageBase64}`
 
 
 
@@ -228,7 +231,7 @@ export async function analyzeCropImage(params: {
 
           { type: "text", text: userText },
 
-          { type: "image_url", image_url: { url: imageUrl, detail: "high" } },
+          { type: "image_url", image_url: { url: visionImageUrl, detail: "high" } },
 
         ],
 

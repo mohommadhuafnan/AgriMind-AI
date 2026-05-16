@@ -94,10 +94,22 @@ export default function DiagnosisPage() {
     })
 
     if (result) {
-      const data = result as CropDiagnosisResult & { reportId?: string }
+      const data = result as CropDiagnosisResult & {
+        reportId?: string
+        imageUrl?: string
+        storageProvider?: string
+      }
       setDiagnosisLanguage(language)
       setDiagnosis(data)
       setReportId(data.reportId ?? null)
+      if (data.imageUrl) {
+        toast.success("Photo saved — you can view it in diagnosis history")
+      } else {
+        toast.message(
+          "Diagnosis saved without photo URL. Add Cloudinary or Firebase Storage in server settings.",
+          { duration: 5000 }
+        )
+      }
       if (data.isValidPlantImage === false) {
         toast.error(t("diagnosis.notPlantTitle"))
       }

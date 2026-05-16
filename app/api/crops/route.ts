@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server"
 import { getSessionUser } from "@/lib/auth/session"
+import { sanitizeImageUrlForDb } from "@/lib/images/parse-data-uri"
 import { listCrops, createCrop } from "@/services/crop.service"
+import {
+  isImageStorageConfigured,
+  uploadImageFromBase64,
+} from "@/services/upload.service"
 
 export async function GET() {
   try {
@@ -32,6 +37,16 @@ export async function POST(request: Request) {
       )
     }
 
+    let imageUrl = sanitizeImageUrlForDb(body.imageUrl)
+
+    if (body.imageBase64?.trim() && isImageStorageConfigured()) {
+      const uploaded = await uploadImageFromBase64(body.imageBase64.trim(), {
+        folder: "agrimind/crops",
+        userId: session.uid,
+      })
+      imageUrl = sanitizeImageUrlForDb(uploaded.url)
+    }
+
     const crop = await createCrop({
       firebaseUid: session.uid,
       name: body.name.trim(),
@@ -52,6 +67,7 @@ export async function POST(request: Request) {
       nextTask: body.nextTask,
       nextTaskDate: body.nextTaskDate ? new Date(body.nextTaskDate) : undefined,
       notes: body.notes,
+      imageUrl,
     })
 
     return NextResponse.json({ success: true, data: crop }, { status: 201 })
