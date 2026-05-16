@@ -10,7 +10,6 @@ import {
   Calendar,
   ArrowRight,
   Loader2,
-  Database,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -45,30 +44,9 @@ const stageLabels: Record<CropStage, string> = {
 }
 
 export default function CropsPage() {
-  const { crops, loading, deleteCrop, seedSampleCrops } = useCrops()
+  const { crops, loading, deleteCrop } = useCrops()
   const [searchQuery, setSearchQuery] = useState("")
   const [filter, setFilter] = useState<"all" | CropStatus>("all")
-  const [seeding, setSeeding] = useState(false)
-
-  const handleSeedSamples = async () => {
-    setSeeding(true)
-    try {
-      const { created, skipped } = await seedSampleCrops()
-      if (created === 0 && skipped > 0) {
-        toast.info("Sample crops are already on your farm")
-      } else {
-        toast.success(
-          created > 0
-            ? `Added ${created} sample crop${created === 1 ? "" : "s"}`
-            : "Sample crops added"
-        )
-      }
-    } catch {
-      toast.error("Failed to add sample crops")
-    } finally {
-      setSeeding(false)
-    }
-  }
 
   const filteredCrops = crops.filter((crop) => {
     const name = String(crop.name ?? "").toLowerCase()
@@ -108,28 +86,12 @@ export default function CropsPage() {
             Manage and track all your crops from planting to harvest.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="gap-2"
-            disabled={seeding}
-            onClick={handleSeedSamples}
-          >
-            {seeding ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Database className="h-4 w-4" />
-            )}
-            Add 5 sample crops
-          </Button>
-          <Button className="gap-2" asChild>
-            <Link href="/dashboard/crops/new">
-              <Plus className="h-4 w-4" />
-              Add Crop
-            </Link>
-          </Button>
-        </div>
+        <Button className="gap-2" asChild>
+          <Link href="/dashboard/crops/new">
+            <Plus className="h-4 w-4" />
+            Add Crop
+          </Link>
+        </Button>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
@@ -295,25 +257,9 @@ export default function CropsPage() {
               ? "Add your first crop to start tracking."
               : "Try adjusting your search or filter."}
           </p>
-          <div className="flex flex-col sm:flex-row gap-2 justify-center">
-            <Button
-              type="button"
-              variant="outline"
-              className="gap-2"
-              disabled={seeding}
-              onClick={handleSeedSamples}
-            >
-              {seeding ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Database className="h-4 w-4" />
-              )}
-              Add 5 sample crops
-            </Button>
-            <Button asChild>
-              <Link href="/dashboard/crops/new">Add Your First Crop</Link>
-            </Button>
-          </div>
+          <Button asChild>
+            <Link href="/dashboard/crops/new">Add Your First Crop</Link>
+          </Button>
         </div>
       )}
     </motion.div>

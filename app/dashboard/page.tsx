@@ -125,28 +125,40 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-agri-teal" aria-hidden />
-              Crop Health
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CropHealthChart data={healthTrend} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-agri-teal-light" aria-hidden />
-              Diagnosis Activity
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <DiagnosisActivityChart data={diagnosisTrend} />
-          </CardContent>
-        </Card>
+        <motion.div
+          initial={{ opacity: 0, x: -16 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.45, delay: 0.15, ease: "easeOut" }}
+        >
+          <Card className="overflow-hidden">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-agri-teal" aria-hidden />
+                Crop Health
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CropHealthChart data={healthTrend} />
+            </CardContent>
+          </Card>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, x: 16 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.45, delay: 0.22, ease: "easeOut" }}
+        >
+          <Card className="overflow-hidden">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-agri-teal-light" aria-hidden />
+                Diagnosis Activity
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DiagnosisActivityChart data={diagnosisTrend} />
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
