@@ -52,11 +52,17 @@ async function fetchBatchTranslations(
   const res = await fetch("/api/valsea/translate-batch", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ texts, target, source: "en" }),
+    body: JSON.stringify({ texts, target, source: "auto" }),
   })
   const json = await res.json()
   if (!res.ok) {
-    throw new Error(json.error ?? "Translation failed")
+    const msg = json.error ?? "Translation failed"
+    if (res.status === 503) {
+      throw new Error(
+        `${msg} Restart \`npm run dev\` after updating .env.local.`
+      )
+    }
+    throw new Error(msg)
   }
   return (json.data?.translations as string[]) ?? texts
 }
@@ -164,8 +170,12 @@ export function LanguageProvider({
       if (texts.length === 0) return texts
       try {
         return await fetchBatchTranslations(texts, language)
-      } catch {
-        toast.error("Could not translate page content. Check VALSEA_API_KEY.")
+      } catch (err) {
+        const msg =
+          err instanceof Error
+            ? err.message
+            : "Could not translate page content."
+        toast.error(msg)
         return texts
       }
     },

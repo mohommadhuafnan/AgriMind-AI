@@ -51,3 +51,15 @@ export async function markAllNotificationsRead(
     { $set: { read: true } }
   )
 }
+
+export async function deleteNotification(
+  firebaseUid: string,
+  notificationId: string
+): Promise<boolean> {
+  await connectDB()
+  const result = await Notification.deleteOne({
+    _id: notificationId,
+    firebaseUid,
+  })
+  return result.deletedCount > 0
+}

@@ -1,11 +1,13 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { toast } from "sonner"
 
 export function useNotifications(pollMs = 30000) {
   const [notifications, setNotifications] = useState<Record<string, unknown>[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -38,5 +40,38 @@ export function useNotifications(pollMs = 30000) {
     await fetchNotifications()
   }
 
-  return { notifications, unreadCount, loading, markRead, markAllRead, refresh: fetchNotifications }
+  const deleteNotification = async (id: string) => {
+    setDeletingId(id)
+    const removed = notifications.find((n) => String(n._id) === id)
+    const wasUnread = removed && !removed.read
+
+    setNotifications((prev) => prev.filter((n) => String(n._id) !== id))
+    if (wasUnread) {
+      setUnreadCount((c) => Math.max(0, c - 1))
+    }
+
+    try {
+      const res = await fetch(`/api/notifications/${id}`, { method: "DELETE" })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? "Failed to delete notification")
+      toast.success("Notification deleted")
+    } catch (e) {
+      await fetchNotifications()
+      toast.error(e instanceof Error ? e.message : "Failed to delete notification")
+      throw e
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  return {
+    notifications,
+    unreadCount,
+    loading,
+    deletingId,
+    markRead,
+    markAllRead,
+    deleteNotification,
+    refresh: fetchNotifications,
+  }
 }

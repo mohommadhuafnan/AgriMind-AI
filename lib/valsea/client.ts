@@ -1,13 +1,29 @@
 import { VALSEA_MODELS } from "./constants"
+import { getValseaBaseUrl, requireValseaApiKey } from "./config"
 
-const BASE_URL = process.env.VALSEA_API_BASE_URL ?? "https://api.valsea.ai"
+const BASE_URL = getValseaBaseUrl()
 
 function getApiKey(): string {
-  const key = process.env.VALSEA_API_KEY
-  if (!key) {
-    throw new Error("VALSEA_API_KEY is not configured in .env.local")
+  return requireValseaApiKey()
+}
+
+function parseTranslateError(data: unknown, status: number): string {
+  const payload = data as {
+    error?: { message?: string } | string
+    message?: string
   }
-  return key
+  if (typeof payload.error === "string") return payload.error
+  if (payload.error && typeof payload.error === "object" && payload.error.message) {
+    return payload.error.message
+  }
+  if (payload.message) return payload.message
+  if (status === 401) {
+    return "Invalid VALSEA_API_KEY. Check your key at valsea.ai/dashboard."
+  }
+  if (status === 402) {
+    return "VALSEA account has insufficient credits. Top up at valsea.ai/dashboard."
+  }
+  return `Translation failed (${status})`
 }
 
 function authHeaders(contentType?: string): HeadersInit {
@@ -191,11 +207,7 @@ export async function valseaTranslate(
   const data = await res.json().catch(() => ({}))
 
   if (!res.ok) {
-    const message =
-      (data as { error?: { message?: string } })?.error?.message ??
-      (data as { message?: string })?.message ??
-      `Translation failed (${res.status})`
-    throw new Error(message)
+    throw new Error(parseTranslateError(data, res.status))
   }
 
   const result = data as {

@@ -1,20 +1,40 @@
 import { NextResponse } from "next/server"
-import { getSessionUser } from "@/lib/auth/session"
+import { isValseaConfigured, requireValseaApiKey } from "@/lib/valsea/config"
 import { translateText } from "@/services/valsea.service"
 import type { SupportedLanguage } from "@/types"
 
 const MAX_ITEMS = 80
 const MAX_CHARS = 4000
 
+function isCriticalValseaError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false
+  const m = err.message.toLowerCase()
+  return (
+    m.includes("valsea_api_key") ||
+    m.includes("api key") ||
+    m.includes("invalid") ||
+    m.includes("unauthorized") ||
+    m.includes("401") ||
+    m.includes("402") ||
+    m.includes("credits") ||
+    m.includes("not set")
+  )
+}
+
 export async function POST(request: Request) {
   try {
-    const user = await getSessionUser()
-    if (!user) {
+    if (!isValseaConfigured()) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
+        {
+          success: false,
+          error:
+            "VALSEA_API_KEY is not set. Add it to .env.local and restart the server.",
+        },
+        { status: 503 }
       )
     }
+
+    requireValseaApiKey()
 
     const body = await request.json()
     const { texts, target, source } = body as {
@@ -45,7 +65,7 @@ export async function POST(request: Request) {
     }
 
     const slice = texts.slice(0, MAX_ITEMS)
-    const src = source ?? "en"
+    const src = source ?? "auto"
     const CONCURRENCY = 5
     const translations: string[] = []
 
@@ -53,18 +73,19 @@ export async function POST(request: Request) {
       const trimmed = text?.trim() ?? ""
       if (!trimmed) return text ?? ""
       if (trimmed.length > MAX_CHARS) return trimmed
-      try {
-        const result = await translateText(trimmed, target, src)
-        return result.translatedText?.trim() || trimmed
-      } catch {
-        return trimmed
-      }
+      const result = await translateText(trimmed, target, src)
+      return result.translatedText?.trim() || trimmed
     }
 
     for (let i = 0; i < slice.length; i += CONCURRENCY) {
       const batch = slice.slice(i, i + CONCURRENCY)
-      const part = await Promise.all(batch.map(translateOne))
-      translations.push(...part)
+      try {
+        const part = await Promise.all(batch.map(translateOne))
+        translations.push(...part)
+      } catch (err) {
+        if (isCriticalValseaError(err)) throw err
+        translations.push(...batch)
+      }
     }
 
     return NextResponse.json({
@@ -73,13 +94,9 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error("[valsea/translate-batch]", error)
-    return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error ? error.message : "Batch translation failed",
-      },
-      { status: 500 }
-    )
+    const message =
+      error instanceof Error ? error.message : "Batch translation failed"
+    const status = message.toLowerCase().includes("not set") ? 503 : 500
+    return NextResponse.json({ success: false, error: message }, { status })
   }
 }

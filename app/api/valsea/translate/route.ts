@@ -1,17 +1,22 @@
 import { NextResponse } from "next/server"
-import { getSessionUser } from "@/lib/auth/session"
+import { isValseaConfigured, requireValseaApiKey } from "@/lib/valsea/config"
 import { translateText } from "@/services/valsea.service"
 import type { SupportedLanguage } from "@/types"
 
 export async function POST(request: Request) {
   try {
-    const user = await getSessionUser()
-    if (!user) {
+    if (!isValseaConfigured()) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
+        {
+          success: false,
+          error:
+            "VALSEA_API_KEY is not set. Add it to .env.local and restart the server.",
+        },
+        { status: 503 }
       )
     }
+
+    requireValseaApiKey()
 
     const body = await request.json()
     const { text, target, source } = body as {
@@ -46,13 +51,9 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error("[valsea/translate]", error)
-    return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error ? error.message : "Translation failed",
-      },
-      { status: 500 }
-    )
+    const message =
+      error instanceof Error ? error.message : "Translation failed"
+    const status = message.toLowerCase().includes("not set") ? 503 : 500
+    return NextResponse.json({ success: false, error: message }, { status })
   }
 }

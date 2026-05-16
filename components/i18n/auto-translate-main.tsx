@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react"
 import { usePathname } from "next/navigation"
 import { useLanguage } from "@/contexts/language-context"
+import { getLandingStaticTranslation } from "@/lib/i18n/landing-static"
 import {
   getPageTranslationCache,
   setPageTranslationCache,
@@ -132,6 +133,13 @@ export function AutoTranslateMain({ children }: { children: React.ReactNode }) {
 
       const unique = [...new Set(sources)]
       const pageCache = getPageTranslationCache(language) ?? {}
+
+      for (const src of unique) {
+        if (pageCache[src]) continue
+        const builtIn = getLandingStaticTranslation(language, src)
+        if (builtIn) pageCache[src] = builtIn
+      }
+
       const missing = unique.filter((u) => !pageCache[u])
 
       if (missing.length > 0) {
