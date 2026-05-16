@@ -255,7 +255,7 @@ export function SiteHelpWidget() {
             <Button
               type="button"
               size="lg"
-              className="relative h-14 w-14 rounded-full bg-gradient-to-br from-primary to-emerald-600 shadow-lg shadow-primary/25 hover:from-primary hover:to-emerald-500"
+              className="relative h-14 w-14 rounded-full bg-gradient-to-br from-primary to-green-500 shadow-lg shadow-primary/25 hover:from-primary hover:to-green-400"
               onClick={() => setOpen(true)}
               aria-expanded={false}
               aria-label="Open help chat"

@@ -311,7 +311,7 @@ export function AuthForm({
               <motion.div
                 whileHover={{
                   scale: 1.02,
-                  boxShadow: "0 12px 40px -12px oklch(0.55 0.18 145 / 0.55)",
+                  boxShadow: "0 12px 40px -12px oklch(0.48 0.15 156 / 0.45)",
                 }}
                 whileTap={{ scale: 0.98 }}
                 className="rounded-xl"
@@ -321,7 +321,7 @@ export function AuthForm({
                   className="group relative h-11 w-full overflow-hidden gap-2 text-base font-semibold shadow-lg shadow-primary/25"
                   disabled={loading || !!socialLoading}
                 >
-                  <span className="absolute inset-0 bg-gradient-to-r from-primary via-emerald-500 to-primary bg-[length:200%_100%] opacity-0 transition-opacity group-hover:opacity-100 group-hover:animate-[shimmer_2s_linear_infinite]" />
+                  <span className="absolute inset-0 bg-gradient-to-r from-primary via-green-400 to-primary bg-[length:200%_100%] opacity-0 transition-opacity group-hover:opacity-100 group-hover:animate-[shimmer_2s_linear_infinite]" />
                   {loading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
@@ -352,7 +352,7 @@ export function AuthForm({
                 key={provider}
                 whileHover={{
                   scale: 1.03,
-                  boxShadow: "0 8px 24px -8px oklch(0.55 0.18 145 / 0.25)",
+                  boxShadow: "0 8px 24px -8px oklch(0.48 0.15 156 / 0.25)",
                 }}
                 whileTap={{ scale: 0.97 }}
               >

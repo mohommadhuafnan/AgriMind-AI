@@ -46,7 +46,7 @@ export function AuthInput({
         className={cn(
           "relative rounded-xl border bg-muted/30 transition-shadow",
           focused
-            ? "border-primary/50 shadow-[0_0_0_3px_oklch(0.55_0.18_145/0.15),0_8px_24px_-8px_oklch(0.55_0.18_145/0.35)]"
+            ? "border-primary/50 shadow-[0_0_0_3px_oklch(0.48_0.15_156/0.15),0_8px_24px_-8px_oklch(0.48_0.15_156/0.30)]"
             : "border-border/60 shadow-inner"
         )}
         animate={{ scale: focused ? 1.01 : 1 }}

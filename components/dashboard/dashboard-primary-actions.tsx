@@ -16,7 +16,7 @@ const actions = [
     descKey: "dashboard.scanCrop.desc" satisfies UiCatalogKey,
     ctaKey: "dashboard.scanCrop.cta" satisfies UiCatalogKey,
     className:
-      "from-emerald-600/90 via-primary to-emerald-700/80 shadow-emerald-900/20 hover:shadow-emerald-900/30",
+      "from-green-600 via-primary to-green-700 shadow-green-900/25 hover:shadow-green-900/35",
     iconWrap: "bg-white/20 ring-white/30",
   },
   {
@@ -27,7 +27,7 @@ const actions = [
     descKey: "dashboard.askAi.desc" satisfies UiCatalogKey,
     ctaKey: "dashboard.askAi.cta" satisfies UiCatalogKey,
     className:
-      "from-teal-600/90 via-chart-3 to-cyan-700/80 shadow-teal-900/20 hover:shadow-teal-900/30",
+      "from-green-700 via-primary to-emerald-600 shadow-green-900/25 hover:shadow-green-900/35",
     iconWrap: "bg-white/20 ring-white/30",
   },
 ] as const

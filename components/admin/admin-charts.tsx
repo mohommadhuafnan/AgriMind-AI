@@ -17,9 +17,9 @@ import {
 } from "recharts"
 
 const SEVERITY_COLORS: Record<string, string> = {
-  low: "hsl(var(--primary))",
-  medium: "hsl(var(--accent))",
-  high: "hsl(var(--destructive))",
+  low: "var(--primary)",
+  medium: "var(--accent)",
+  high: "var(--destructive)",
 }
 
 export function SignupTrendChart({
@@ -39,12 +39,12 @@ export function SignupTrendChart({
           <YAxis className="text-xs" allowDecimals={false} />
           <Tooltip
             contentStyle={{
-              backgroundColor: "hsl(var(--card))",
-              border: "1px solid hsl(var(--border))",
+              backgroundColor: "var(--card)",
+              border: "1px solid var(--border)",
               borderRadius: "8px",
             }}
           />
-          <Bar dataKey="signups" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Signups" />
+          <Bar dataKey="signups" fill="var(--primary)" radius={[4, 4, 0, 0]} name="Signups" />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -70,8 +70,8 @@ export function PlatformActivityChart({
           <YAxis className="text-xs" allowDecimals={false} />
           <Tooltip
             contentStyle={{
-              backgroundColor: "hsl(var(--card))",
-              border: "1px solid hsl(var(--border))",
+              backgroundColor: "var(--card)",
+              border: "1px solid var(--border)",
               borderRadius: "8px",
             }}
           />
@@ -79,7 +79,7 @@ export function PlatformActivityChart({
           <Line
             type="monotone"
             dataKey="diagnoses"
-            stroke="hsl(var(--primary))"
+            stroke="var(--primary)"
             strokeWidth={2}
             dot={false}
             name="Diagnoses"
@@ -87,7 +87,7 @@ export function PlatformActivityChart({
           <Line
             type="monotone"
             dataKey="voice"
-            stroke="hsl(var(--accent))"
+            stroke="var(--accent)"
             strokeWidth={2}
             dot={false}
             name="Voice sessions"
@@ -124,7 +124,7 @@ export function SeverityPieChart({
             {data.map((entry) => (
               <Cell
                 key={entry.severity}
-                fill={SEVERITY_COLORS[entry.severity] ?? "hsl(var(--muted-foreground))"}
+                fill={SEVERITY_COLORS[entry.severity] ?? "var(--muted-foreground)"}
               />
             ))}
           </Pie>
@@ -154,12 +154,12 @@ export function DistrictBarChart({
           <YAxis dataKey="district" type="category" width={90} tick={{ fontSize: 11 }} />
           <Tooltip
             contentStyle={{
-              backgroundColor: "hsl(var(--card))",
-              border: "1px solid hsl(var(--border))",
+              backgroundColor: "var(--card)",
+              border: "1px solid var(--border)",
               borderRadius: "8px",
             }}
           />
-          <Bar dataKey="farmers" fill="hsl(var(--chart-3))" radius={[0, 4, 4, 0]} name="Farmers" />
+          <Bar dataKey="farmers" fill="var(--chart-3)" radius={[0, 4, 4, 0]} name="Farmers" />
         </BarChart>
       </ResponsiveContainer>
     </div>

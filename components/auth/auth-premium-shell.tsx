@@ -35,8 +35,8 @@ export function AuthPremiumShell() {
         animate={{
           background:
             mode === "login"
-              ? "radial-gradient(ellipse at top, oklch(0.55 0.18 145 / 0.12), transparent 55%), radial-gradient(ellipse at bottom right, oklch(0.75 0.15 85 / 0.1), transparent 50%)"
-              : "radial-gradient(ellipse at top, oklch(0.5 0.16 160 / 0.14), transparent 55%), radial-gradient(ellipse at bottom left, oklch(0.7 0.14 90 / 0.12), transparent 50%)",
+              ? "radial-gradient(ellipse at top, oklch(0.48 0.15 156 / 0.12), transparent 55%), radial-gradient(ellipse at bottom right, oklch(0.75 0.14 95 / 0.1), transparent 50%)"
+              : "radial-gradient(ellipse at top, oklch(0.50 0.14 158 / 0.14), transparent 55%), radial-gradient(ellipse at bottom left, oklch(0.70 0.12 156 / 0.12), transparent 50%)",
         }}
         transition={{ duration: 0.7, ease: [0.45, 0, 0.55, 1] }}
       />
@@ -62,7 +62,7 @@ export function AuthPremiumShell() {
       >
         <motion.div
           layout
-          className="w-full max-w-[960px] overflow-hidden rounded-[28px] border border-white/20 bg-background/40 shadow-[0_32px_80px_-20px_oklch(0.2_0.05_145/0.45)] backdrop-blur-2xl dark:border-white/10 dark:bg-background/30"
+          className="w-full max-w-[960px] overflow-hidden rounded-[28px] border border-white/20 bg-background/40 shadow-[0_32px_80px_-20px_oklch(0.2_0.05_156/0.40)] backdrop-blur-2xl dark:border-white/10 dark:bg-background/30"
           transition={authPanelSpring}
         >
           <div className="relative overflow-hidden">

@@ -35,8 +35,14 @@ import { useLanguage } from "@/contexts/language-context"
 import { LanguagePicker } from "@/components/i18n/language-picker"
 import { useDiagnosisTranslation } from "@/hooks/use-diagnosis-translation"
 import { DiagnosisResultsPanel } from "@/components/dashboard/diagnosis-results-panel"
+import { CropCameraDialog } from "@/components/dashboard/crop-camera-dialog"
 
 const cropTypes = [...SUPPORTED_CROPS, "Other"]
+
+function prefersNativeCamera(): boolean {
+  if (typeof navigator === "undefined") return false
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+}
 
 export default function DiagnosisPage() {
   const router = useRouter()
@@ -59,17 +65,42 @@ export default function DiagnosisPage() {
   const [isTracking, setIsTracking] = useState(false)
   const [isSettingReminders, setIsSettingReminders] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const [cameraOpen, setCameraOpen] = useState(false)
   const { diagnoseCrop, isLoading: isAnalyzing } = useAiChat(language)
+
+  const applyImageFile = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file (PNG or JPG)")
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image must be 10MB or smaller")
+      return
+    }
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setSelectedImage(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+  }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setSelectedImage(reader.result as string)
-      }
-      reader.readAsDataURL(file)
+    if (file) applyImageFile(file)
+    e.target.value = ""
+  }
+
+  const handleTakePhoto = () => {
+    if (prefersNativeCamera() && cameraInputRef.current) {
+      cameraInputRef.current.click()
+      return
     }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      cameraInputRef.current?.click()
+      return
+    }
+    setCameraOpen(true)
   }
 
   const handleAnalyze = async () => {
@@ -240,6 +271,14 @@ export default function DiagnosisPage() {
                   accept="image/*"
                   className="hidden"
                 />
+                <input
+                  type="file"
+                  ref={cameraInputRef}
+                  onChange={handleImageUpload}
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                />
                 
                 {!selectedImage ? (
                   <div
@@ -283,11 +322,22 @@ export default function DiagnosisPage() {
                     <ImageIcon className="h-4 w-4" />
                     Choose File
                   </Button>
-                  <Button variant="outline" className="flex-1 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1 gap-2"
+                    onClick={handleTakePhoto}
+                  >
                     <Camera className="h-4 w-4" />
                     Take Photo
                   </Button>
                 </div>
+
+                <CropCameraDialog
+                  open={cameraOpen}
+                  onOpenChange={setCameraOpen}
+                  onCapture={setSelectedImage}
+                />
               </CardContent>
             </Card>
           </motion.div>
@@ -355,10 +405,10 @@ export default function DiagnosisPage() {
                 <div className="p-4 rounded-xl bg-muted/50">
                   <h4 className="font-medium text-foreground mb-2">Tips for Better Diagnosis:</h4>
                   <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>â€¢ Take clear, well-lit photos</li>
-                    <li>â€¢ Include close-ups of affected areas</li>
-                    <li>â€¢ Mention when the problem started</li>
-                    <li>â€¢ Note any recent changes (weather, fertilizer)</li>
+                    <li>• Take clear, well-lit photos</li>
+                    <li>• Include close-ups of affected areas</li>
+                    <li>• Mention when the problem started</li>
+                    <li>• Note any recent changes (weather, fertilizer)</li>
                   </ul>
                 </div>
 

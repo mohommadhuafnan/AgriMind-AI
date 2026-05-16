@@ -18,7 +18,7 @@ export function AuthCursorGlow() {
     return () => window.removeEventListener("mousemove", move)
   }, [x, y])
 
-  const background = useMotionTemplate`radial-gradient(600px circle at ${springX}px ${springY}px, oklch(0.55 0.2 145 / 0.15), transparent 65%)`
+  const background = useMotionTemplate`radial-gradient(600px circle at ${springX}px ${springY}px, oklch(0.48 0.16 156 / 0.15), transparent 65%)`
 
   return (
     <motion.div

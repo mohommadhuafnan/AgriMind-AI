@@ -50,10 +50,10 @@ import { buildWhatsAppUrl } from "@/lib/whatsapp/config"
 import { toast } from "sonner"
 
 const CHART_COLORS = [
-  "hsl(var(--primary))",
-  "hsl(var(--accent))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--destructive))",
+  "var(--primary)",
+  "var(--accent)",
+  "var(--chart-3)",
+  "var(--destructive)",
 ]
 
 function formatRelativeTime(date: Date | null) {
@@ -565,8 +565,8 @@ export default function MarketPage() {
                   <Tooltip
                     formatter={(value: number) => [`Rs. ${value}`, ""]}
                     contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
+                      backgroundColor: "var(--card)",
+                      border: "1px solid var(--border)",
                       borderRadius: "8px",
                     }}
                   />

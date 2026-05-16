@@ -47,8 +47,8 @@ export function AuthBrandPanel({
         animate={{
           background:
             mode === "login"
-              ? "linear-gradient(145deg, oklch(0.42 0.14 145) 0%, oklch(0.32 0.1 160) 45%, oklch(0.28 0.08 200) 100%)"
-              : "linear-gradient(145deg, oklch(0.38 0.12 165) 0%, oklch(0.45 0.16 130) 50%, oklch(0.32 0.1 85) 100%)",
+              ? "linear-gradient(145deg, oklch(0.40 0.14 156) 0%, oklch(0.34 0.12 158) 45%, oklch(0.28 0.08 175) 100%)"
+              : "linear-gradient(145deg, oklch(0.36 0.12 158) 0%, oklch(0.44 0.16 152) 50%, oklch(0.32 0.10 95) 100%)",
         }}
         transition={{ duration: 0.8, ease: [0.45, 0, 0.55, 1] }}
       />

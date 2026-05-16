@@ -11,7 +11,7 @@ import {
   YAxis,
 } from "recharts"
 
-const COLORS = ["hsl(var(--primary))", "hsl(var(--accent))", "hsl(var(--chart-3))", "hsl(var(--chart-5))"]
+const COLORS = ["var(--primary)", "var(--accent)", "var(--chart-3)", "var(--chart-5)"]
 
 interface HealthItem {
   name: string
@@ -41,8 +41,8 @@ export function CropHealthChart({ data }: { data: HealthItem[] }) {
         <YAxis type="category" dataKey="name" width={72} tick={{ fontSize: 11 }} />
         <Tooltip
           contentStyle={{
-            background: "hsl(var(--card))",
-            border: "1px solid hsl(var(--border))",
+            background: "var(--card)",
+            border: "1px solid var(--border)",
             borderRadius: "8px",
           }}
         />
@@ -82,12 +82,12 @@ export function DiagnosisActivityChart({ data }: { data: DiagnosisItem[] }) {
         <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
         <Tooltip
           contentStyle={{
-            background: "hsl(var(--card))",
-            border: "1px solid hsl(var(--border))",
+            background: "var(--card)",
+            border: "1px solid var(--border)",
             borderRadius: "8px",
           }}
         />
-        <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="count" fill="var(--primary)" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   )
