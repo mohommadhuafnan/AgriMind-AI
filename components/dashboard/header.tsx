@@ -35,14 +35,15 @@ export function DashboardHeader({ onOpenMobileMenu }: DashboardHeaderProps) {
           <Menu className="h-5 w-5" />
         </Button>
 
-        <div className="min-w-0 flex-1">
-          <AnimatedSearchInput className="mx-auto hidden max-w-md lg:block" />
-          <p className="truncate text-sm font-semibold text-foreground lg:hidden">
-            AgriMind AI
-          </p>
+        <div className="hidden min-w-0 flex-1 items-center gap-4 lg:flex">
+          <LiveDateTime variant="compact" className="shrink-0 border-r border-border pr-4" />
+          <AnimatedSearchInput className="max-w-lg flex-1" />
         </div>
 
-        <LiveDateTime variant="compact" className="shrink-0" />
+        <div className="min-w-0 flex-1 lg:hidden">
+          <p className="truncate text-sm font-semibold text-foreground">AgriMind AI</p>
+          <LiveDateTime variant="compact" className="!block text-left" />
+        </div>
 
         <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
           <div className="hidden sm:block">

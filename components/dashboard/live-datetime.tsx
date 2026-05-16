@@ -50,7 +50,7 @@ export function LiveDateTime({ variant = "compact", className }: LiveDateTimePro
 
   return (
     <div
-      className={cn("hidden text-right md:block", className)}
+      className={cn("shrink-0 text-left", className)}
       data-no-translate
     >
       <p className="text-sm font-semibold tabular-nums text-foreground">{time}</p>
