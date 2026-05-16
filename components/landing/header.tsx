@@ -5,7 +5,7 @@ import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { Menu, X, Leaf, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { ThemeToggle } from "@/components/layout/theme-toggle"
+import { ThemeToggle, ThemeToggleRow } from "@/components/layout/theme-toggle"
 import { LanguagePicker } from "@/components/i18n/language-picker"
 import { cn } from "@/lib/utils"
 
@@ -95,9 +95,9 @@ export function Header() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-background border-b border-border"
+            className="md:hidden fixed inset-0 top-16 z-40 overflow-y-auto bg-background border-b border-border"
           >
-            <div className="px-4 py-4 space-y-3">
+            <div className="px-4 py-6 space-y-1 pb-8">
               {navItems.map((item) => (
                 <Link
                   key={item.name}
@@ -108,7 +108,8 @@ export function Header() {
                   {item.name}
                 </Link>
               ))}
-              <div className="pt-3 space-y-2 border-t border-border" data-no-translate>
+              <div className="space-y-3 border-t border-border pt-3" data-no-translate>
+                <ThemeToggleRow onToggle={() => setIsMobileMenuOpen(false)} />
                 <LanguagePicker />
                 <Button variant="ghost" className="w-full justify-start" asChild>
                   <Link href="/login">Sign In</Link>

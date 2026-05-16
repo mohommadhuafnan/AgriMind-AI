@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { ArrowLeft } from "lucide-react"
+import { ThemeToggle } from "@/components/layout/theme-toggle"
 import { AuthCursorGlow } from "@/components/auth/auth-cursor-glow"
 import { AuthParticleField } from "@/components/auth/auth-particle-field"
 import { AuthBrandPanel } from "@/components/auth/auth-brand-panel"
@@ -36,13 +37,16 @@ export function AuthPremiumShell() {
       <AuthCursorGlow />
       <AuthParticleField />
 
-      <Link
-        href="/"
-        className="absolute left-4 top-4 z-30 flex items-center gap-2 rounded-full border border-border/60 bg-background/70 px-3 py-1.5 text-sm text-muted-foreground shadow-sm backdrop-blur-md transition-colors hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to home
-      </Link>
+      <div className="absolute left-4 right-4 top-4 z-30 flex items-center justify-between gap-2">
+        <Link
+          href="/"
+          className="flex items-center gap-2 rounded-full border border-border/60 bg-background/70 px-3 py-1.5 text-sm text-muted-foreground shadow-sm backdrop-blur-md transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span className="hidden sm:inline">Back to home</span>
+        </Link>
+        <ThemeToggle className="rounded-full border border-border/60 bg-background/70 shadow-sm backdrop-blur-md" />
+      </div>
 
       <motion.div
         className="relative z-10 flex min-h-screen items-center justify-center p-4 py-16 md:p-8"
