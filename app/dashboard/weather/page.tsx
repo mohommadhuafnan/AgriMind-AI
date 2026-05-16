@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Droplets,
@@ -26,6 +26,7 @@ import {
 import { SRI_LANKA_LOCATIONS } from "@/lib/weather/cities"
 import { useWeather } from "@/hooks/use-weather"
 import { WeatherHeroCard } from "@/components/weather/weather-hero-card"
+import { TypingText } from "@/components/ui/typing-text"
 import { getSriLankaHour, getWeatherTimePeriod } from "@/lib/weather/time-theme"
 
 const fadeUp = {
@@ -67,6 +68,34 @@ export default function WeatherPage() {
   const location = weather?.location as { name?: string } | undefined
   const source = String(weather?.source ?? "open-meteo")
   const lastUpdated = String(weather?.lastUpdated ?? "")
+
+  const period = getWeatherTimePeriod({
+    isDaytime: current.isDaytime as boolean | undefined,
+    condition: String(current.condition ?? ""),
+    hour: getSriLankaHour(),
+  })
+
+  const insightPhrases = useMemo(() => {
+    const temp = Number(current.temperature ?? 0)
+    const humidity = Number(current.humidity ?? 0)
+    const rain = Number(current.precipitationChance ?? 0)
+    const uv = Number(current.uvIndex ?? 0)
+    const name = location?.name ?? "your area"
+    const lines: string[] = []
+
+    if (rain >= 60) lines.push("Heavy rain likely — postpone fertilizer application")
+    else if (rain >= 30) lines.push("Showers possible — protect harvested produce")
+    if (humidity >= 85) lines.push("Very humid — scout for fungal leaf diseases")
+    else if (humidity >= 70) lines.push("High humidity — improve airflow in nurseries")
+    if (temp >= 34) lines.push("Extreme heat — irrigate crops at dawn or dusk")
+    else if (temp >= 30) lines.push("Warm day — mulch soil to retain moisture")
+    if (uv >= 8 && period !== "night") lines.push("Strong UV — shade young seedlings midday")
+    if (period === "night") lines.push("Calm night — good time to plan tomorrow's field work")
+    else if (period === "morning") lines.push("Morning conditions — ideal for spraying if dry")
+    lines.push(`AgriMind watching weather for ${name}…`)
+
+    return lines.slice(0, 5)
+  }, [current, location?.name, period])
 
   const statItems = [
     {
@@ -194,14 +223,7 @@ export default function WeatherPage() {
               />
               {source === "google" ? "Live (Google Weather)" : "Open-Meteo"} · Updated{" "}
               {formatUpdated(lastUpdated)} ·{" "}
-              <span className="capitalize">
-                {getWeatherTimePeriod({
-                  isDaytime: current.isDaytime as boolean | undefined,
-                  condition: String(current.condition ?? ""),
-                  hour: getSriLankaHour(),
-                })}{" "}
-                scene
-              </span>
+              <span className="capitalize">{period} scene</span>
               · Auto-refresh every 15 min
             </motion.div>
 
@@ -221,6 +243,7 @@ export default function WeatherPage() {
                 }
                 isDaytime={current.isDaytime as boolean | undefined}
                 statItems={statItems}
+                insightPhrases={insightPhrases}
               />
             </motion.div>
 
@@ -243,14 +266,14 @@ export default function WeatherPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <motion.p
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.4 }}
-                      className="text-sm text-foreground"
-                    >
-                      {analysis.summary}
-                    </motion.p>
+                    <p className="text-sm text-foreground min-h-[3rem] leading-relaxed">
+                      <TypingText
+                        key={`${locationId}-${analysis.summary}`}
+                        text={analysis.summary}
+                        speedMs={28}
+                        startDelayMs={400}
+                      />
+                    </p>
                     {analysis.risks && analysis.risks.length > 0 && (
                       <div>
                         <p className="text-xs font-medium text-muted-foreground mb-2">

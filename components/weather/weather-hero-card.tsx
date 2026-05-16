@@ -1,9 +1,12 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { MapPin, CloudSun, CloudRain } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
+import { TypingText } from "@/components/ui/typing-text"
+import { TypingCursorLine } from "@/components/ui/typing-cursor-line"
 import { getWeatherTimeTheme } from "@/lib/weather/time-theme"
 import type { LucideIcon } from "lucide-react"
 
@@ -18,6 +21,8 @@ interface WeatherHeroCardProps {
   iconUrl?: string
   isDaytime?: boolean
   statItems: StatItem[]
+  /** Rotating farming tips shown with typewriter animation */
+  insightPhrases?: string[]
 }
 
 function RainOverlay() {
@@ -58,7 +63,14 @@ export function WeatherHeroCard({
   iconUrl,
   isDaytime,
   statItems,
+  insightPhrases = [],
 }: WeatherHeroCardProps) {
+  const [conditionTyped, setConditionTyped] = useState(false)
+
+  useEffect(() => {
+    setConditionTyped(false)
+  }, [locationName, condition])
+
   const theme = getWeatherTimeTheme({
     isDaytime,
     condition,
@@ -137,18 +149,34 @@ export function WeatherHeroCard({
               >
                 {temperature}°C
               </motion.p>
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className={`capitalize mt-1 font-medium ${isNight ? "text-white/95" : ""}`}
+              <p
+                className={`capitalize mt-1 font-medium min-h-[1.5rem] ${isNight ? "text-white/95" : ""}`}
               >
-                {condition}
-              </motion.p>
+                <TypingText
+                  key={`${locationName}-${condition}`}
+                  text={condition}
+                  speedMs={38}
+                  startDelayMs={320}
+                  onComplete={() => setConditionTyped(true)}
+                />
+              </p>
+              {insightPhrases.length > 0 && (
+                <TypingCursorLine
+                  key={insightPhrases.join("|")}
+                  phrases={insightPhrases}
+                  className={`text-sm mt-1.5 italic ${mutedText}`}
+                  typingMs={36}
+                  pauseMs={3200}
+                />
+              )}
               <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.25 }}
+                initial={{ opacity: 0, y: 4 }}
+                animate={
+                  conditionTyped || insightPhrases.length === 0
+                    ? { opacity: 1, y: 0 }
+                    : { opacity: 0, y: 4 }
+                }
+                transition={{ duration: 0.35, ease: "easeOut" }}
                 className={`text-sm mt-1 ${mutedText}`}
               >
                 Feels like {feelsLike}°C
