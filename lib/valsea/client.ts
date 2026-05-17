@@ -23,6 +23,9 @@ function parseTranslateError(data: unknown, status: number): string {
   if (status === 402) {
     return "VALSEA account has insufficient credits. Top up at valsea.ai/dashboard."
   }
+  if (status === 400) {
+    return "This language is not supported by Valsea translate. The app will use OpenAI instead."
+  }
   return `Translation failed (${status})`
 }
 

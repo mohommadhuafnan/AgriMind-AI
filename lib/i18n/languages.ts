@@ -31,7 +31,7 @@ export const ASIAN_LANGUAGES: readonly AsianLanguage[] = [
   { code: "vi", label: "Vietnamese", nativeLabel: "Tiếng Việt", region: "southeast_asia", valsea: "vietnamese", bcp47: "vi-VN" },
   { code: "fil", label: "Filipino", nativeLabel: "Filipino", region: "southeast_asia", valsea: "filipino", bcp47: "fil-PH" },
   { code: "sg", label: "Singlish", nativeLabel: "Singlish", region: "southeast_asia", valsea: "singlish", bcp47: "en-SG" },
-  { code: "zh", label: "Mandarin", nativeLabel: "中文", region: "east_asia", valsea: "mandarin", bcp47: "zh-CN" },
+  { code: "zh", label: "Mandarin", nativeLabel: "中文", region: "east_asia", valsea: "chinese", bcp47: "zh-CN" },
   { code: "yue", label: "Cantonese", nativeLabel: "粵語", region: "east_asia", valsea: "cantonese", bcp47: "yue-HK" },
   { code: "ko", label: "Korean", nativeLabel: "한국어", region: "east_asia", valsea: "korean", bcp47: "ko-KR" },
   { code: "ja", label: "Japanese", nativeLabel: "日本語", region: "east_asia", valsea: "japanese", bcp47: "ja-JP" },

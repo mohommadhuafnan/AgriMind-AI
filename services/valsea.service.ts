@@ -1,94 +1,72 @@
 import {
-
   valseaTranscribe,
-
   valseaTranslate,
-
   type TranscribeResult,
-
   type TranslateResult,
-
 } from "@/lib/valsea/client"
-
 import { toValseaLanguageName } from "@/lib/i18n/languages"
-
+import {
+  isValseaTranslateSupported,
+  toValseaTranslateSource,
+  toValseaTranslateTarget,
+} from "@/lib/valsea/translate-languages"
+import { translateTextWithOpenAI } from "@/services/openai-translate.service"
 import { getFarmingAssistantReply } from "@/services/ai.service"
-
 import type { SupportedLanguage } from "@/types"
 
-
-
 export function toValseaLanguage(code: SupportedLanguage | string): string {
-
   return toValseaLanguageName(code)
-
 }
 
-
-
 export async function transcribeAudio(
-
   file: Blob,
-
   language: SupportedLanguage | "auto",
-
   filename?: string
-
 ): Promise<TranscribeResult> {
-
   return valseaTranscribe({
     file,
     filename,
     language:
       language === "auto" ? undefined : toValseaLanguage(language),
   })
-
 }
-
-
 
 export async function translateText(
-
   text: string,
-
   target: SupportedLanguage,
-
   source?: SupportedLanguage | "auto"
-
 ): Promise<TranslateResult> {
-
   if (target === "en" && (!source || source === "en" || source === "auto")) {
-
     return {
-
       translatedText: text,
-
       sourceLanguage: "english",
-
       targetLanguage: "english",
-
     }
-
   }
 
-  return valseaTranslate({
+  const valseaTarget = toValseaTranslateTarget(target)
+  if (valseaTarget) {
+    return valseaTranslate({
+      text,
+      target: valseaTarget,
+      source: toValseaTranslateSource(source ?? "auto"),
+    })
+  }
 
+  const translatedText = await translateTextWithOpenAI(
     text,
-
-    target: toValseaLanguage(target),
-
-    source:
-
-      source && source !== "auto" ? toValseaLanguage(source) : "auto",
-
-  })
-
+    target,
+    source ?? "en"
+  )
+  const lang = toValseaLanguageName(target)
+  return {
+    translatedText,
+    sourceLanguage: toValseaTranslateSource(source ?? "en"),
+    targetLanguage: lang,
+  }
 }
 
-
-
 /** Voice/text assist — OpenAI + optional Valsea translation polish */
-
 export async function getMultilingualFarmingReply(
   userMessage: string,
   language: SupportedLanguage,
@@ -130,4 +108,3 @@ export async function getMultilingualFarmingReply(
     return { reply: direct.reply, replyEnglish: englishReply }
   }
 }
-

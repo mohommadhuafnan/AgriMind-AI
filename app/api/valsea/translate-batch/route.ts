@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 import { isValseaConfigured, requireValseaApiKey } from "@/lib/valsea/config"
+import { isValseaTranslateSupported } from "@/lib/valsea/translate-languages"
+import { translateTextsWithOpenAI } from "@/services/openai-translate.service"
 import { translateText } from "@/services/valsea.service"
 import type { SupportedLanguage } from "@/types"
 
@@ -16,12 +18,12 @@ function isCriticalValseaError(err: unknown): boolean {
   return (
     m.includes("valsea_api_key") ||
     m.includes("api key") ||
-    m.includes("invalid") ||
     m.includes("unauthorized") ||
     m.includes("401") ||
     m.includes("402") ||
     m.includes("credits") ||
-    m.includes("not set")
+    m.includes("not set") ||
+    m.includes("invalid or expired")
   )
 }
 
@@ -38,7 +40,7 @@ async function translateOne(
     const result = await translateText(trimmed, target, source)
     const out = result.translatedText?.trim()
     if (!out) {
-      return { text: trimmed, changed: false, error: "Empty translation from Valsea" }
+      return { text: trimmed, changed: false, error: "Empty translation response" }
     }
     return { text: out, changed: out !== trimmed }
   } catch (err) {
@@ -50,19 +52,6 @@ async function translateOne(
 
 export async function POST(request: Request) {
   try {
-    if (!isValseaConfigured()) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "VALSEA_API_KEY is not set on the server. Add it to .env.local and Vercel → Settings → Environment Variables, then redeploy.",
-        },
-        { status: 503 }
-      )
-    }
-
-    requireValseaApiKey()
-
     const body = await request.json()
     const { texts, target, source } = body as {
       texts?: string[]
@@ -93,6 +82,38 @@ export async function POST(request: Request) {
 
     const slice = texts.slice(0, MAX_ITEMS)
     const src = source ?? "en"
+    const remainder = texts.slice(MAX_ITEMS)
+
+    // Hindi, Sinhala, Korean, Japanese, etc. — Valsea translate API does not support these
+    if (!isValseaTranslateSupported(target)) {
+      try {
+        const translations = await translateTextsWithOpenAI(slice, target, src)
+        return NextResponse.json({
+          success: true,
+          data: { translations: [...translations, ...remainder] },
+        })
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Translation failed for this language."
+        return NextResponse.json({ success: false, error: message }, { status: 500 })
+      }
+    }
+
+    if (!isValseaConfigured()) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "VALSEA_API_KEY is not set on the server. Add it to .env.local and Vercel → Settings → Environment Variables, then redeploy.",
+        },
+        { status: 503 }
+      )
+    }
+
+    requireValseaApiKey()
+
     const translations: string[] = new Array(slice.length)
     let failedCount = 0
     let lastError: string | undefined
@@ -118,13 +139,12 @@ export async function POST(request: Request) {
           success: false,
           error:
             lastError ??
-            "Valsea could not translate text. Add VALSEA_API_KEY to Vercel env (same key as valsea.ai/dashboard) and redeploy.",
+            "Valsea could not translate text. Check VALSEA_API_KEY on Vercel and redeploy.",
         },
         { status: 502 }
       )
     }
 
-    const remainder = texts.slice(MAX_ITEMS)
     return NextResponse.json({
       success: true,
       data: { translations: [...translations, ...remainder] },
