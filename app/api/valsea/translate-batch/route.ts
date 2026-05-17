@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server"
 import { isValseaConfigured, requireValseaApiKey } from "@/lib/valsea/config"
+import {
+  getCachedServerTranslation,
+  setCachedServerTranslation,
+} from "@/lib/i18n/server-translation-cache"
 import { isValseaTranslateSupported } from "@/lib/valsea/translate-languages"
+import { LIVE_TRANSLATE_MAX_STRINGS } from "@/lib/i18n/translation-policy"
 import { translateTextsWithOpenAI } from "@/services/openai-translate.service"
 import { translateText } from "@/services/valsea.service"
 import type { SupportedLanguage } from "@/types"
 
-/** Vercel hobby = 10s; keep batches small enough to finish in one invocation. */
 export const maxDuration = 60
 
-const MAX_ITEMS = 80
 const MAX_CHARS = 4000
-const CONCURRENCY = 6
+const CONCURRENCY = 4
 
 function isCriticalValseaError(err: unknown): boolean {
   if (!(err instanceof Error)) return false
@@ -36,12 +39,19 @@ async function translateOne(
   if (!trimmed) return { text: text ?? "", changed: false }
   if (trimmed.length > MAX_CHARS) return { text: trimmed, changed: false }
 
+  const srcKey = source ?? "en"
+  const cached = getCachedServerTranslation(target, srcKey, trimmed)
+  if (cached) {
+    return { text: cached, changed: cached !== trimmed }
+  }
+
   try {
     const result = await translateText(trimmed, target, source)
     const out = result.translatedText?.trim()
     if (!out) {
       return { text: trimmed, changed: false, error: "Empty translation response" }
     }
+    setCachedServerTranslation(target, srcKey, trimmed, out)
     return { text: out, changed: out !== trimmed }
   } catch (err) {
     const message = err instanceof Error ? err.message : "Translation failed"
@@ -53,10 +63,11 @@ async function translateOne(
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { texts, target, source } = body as {
+    const { texts, target, source, mode } = body as {
       texts?: string[]
       target?: SupportedLanguage
       source?: SupportedLanguage | "auto"
+      mode?: "live" | "ui"
     }
 
     if (!Array.isArray(texts) || texts.length === 0) {
@@ -80,11 +91,28 @@ export async function POST(request: Request) {
       })
     }
 
-    const slice = texts.slice(0, MAX_ITEMS)
-    const src = source ?? "en"
-    const remainder = texts.slice(MAX_ITEMS)
+    // UI / landing uses built-in strings in the app — never burn API quota here
+    if (mode !== "live") {
+      return NextResponse.json({
+        success: true,
+        data: { translations: texts },
+      })
+    }
 
-    // Hindi, Sinhala, Korean, Japanese, etc. — Valsea translate API does not support these
+    if (texts.length > LIVE_TRANSLATE_MAX_STRINGS) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Too many strings at once (max ${LIVE_TRANSLATE_MAX_STRINGS}). Open the report again in a moment.`,
+        },
+        { status: 400 }
+      )
+    }
+
+    const slice = texts
+    const src = source ?? "en"
+    const remainder: string[] = []
+
     if (!isValseaTranslateSupported(target)) {
       try {
         const translations = await translateTextsWithOpenAI(slice, target, src)
@@ -106,7 +134,7 @@ export async function POST(request: Request) {
         {
           success: false,
           error:
-            "VALSEA_API_KEY is not set on the server. Add it to .env.local and Vercel → Settings → Environment Variables, then redeploy.",
+            "VALSEA_API_KEY is not set on the server. Add it to Vercel env and redeploy.",
         },
         { status: 503 }
       )
@@ -137,9 +165,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            lastError ??
-            "Valsea could not translate text. Check VALSEA_API_KEY on Vercel and redeploy.",
+          error: lastError ?? "Translation failed. Try again in a minute.",
         },
         { status: 502 }
       )

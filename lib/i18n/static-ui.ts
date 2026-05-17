@@ -1,13 +1,9 @@
 import type { SupportedLanguage } from "@/lib/i18n/languages"
-
+import { HI_UI } from "@/lib/i18n/bundled/hi-ui"
 import {
-
   UI_CATALOG,
-
   UI_CATALOG_KEYS,
-
   type UiCatalogKey,
-
 } from "@/lib/i18n/ui-catalog"
 
 
@@ -279,11 +275,9 @@ const TA: StaticMap = {
 
 
 const STATIC_BY_LANG: Partial<Record<SupportedLanguage, StaticMap>> = {
-
   si: SI,
-
   ta: TA,
-
+  hi: HI_UI,
 }
 
 
@@ -307,9 +301,11 @@ export function getStaticUiTranslations(
 
 
 export function hasBuiltInShellTranslations(lang: SupportedLanguage): boolean {
+  return lang === "si" || lang === "ta" || lang === "hi"
+}
 
-  return lang === "si" || lang === "ta"
-
+export function isShellCatalogComplete(map: TranslationMap): boolean {
+  return SHELL_CATALOG_KEYS.every((key) => Boolean(map[key]))
 }
 
 

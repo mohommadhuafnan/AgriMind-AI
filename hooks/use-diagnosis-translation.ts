@@ -76,7 +76,7 @@ export function useDiagnosisTranslation(
   source: CropDiagnosisResult | null,
   sourceLanguage: SupportedLanguage
 ) {
-  const { language, translateTexts } = useLanguage()
+  const { language, translateTextsLive } = useLanguage()
   const [display, setDisplay] = useState<CropDiagnosisResult | null>(source)
   const [translating, setTranslating] = useState(false)
   const runId = useRef(0)
@@ -102,7 +102,7 @@ export function useDiagnosisTranslation(
     void (async () => {
       try {
         const originals = collectTexts(source)
-        const translated = await translateTexts(originals)
+        const translated = await translateTextsLive(originals)
         if (currentRun !== runId.current) return
         setDisplay(applyTranslations(source, originals, translated))
       } catch {
@@ -111,7 +111,7 @@ export function useDiagnosisTranslation(
         if (currentRun === runId.current) setTranslating(false)
       }
     })()
-  }, [source, sourceLanguage, language, translateTexts])
+  }, [source, sourceLanguage, language, translateTextsLive])
 
   return { displayDiagnosis: display, translating }
 }

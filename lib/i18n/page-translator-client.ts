@@ -1,5 +1,6 @@
 import type { SupportedLanguage } from "@/lib/i18n/languages"
 import { getLandingStaticTranslation } from "@/lib/i18n/landing-static"
+import { resolveStaticText } from "@/lib/i18n/resolve-static"
 
 const SKIP_TAGS = new Set([
   "SCRIPT",
@@ -107,7 +108,8 @@ export function resolveTranslations(
 ): Map<string, string> {
   const map = new Map<string, string>()
   sources.forEach((src, i) => {
-    const builtIn = getLandingStaticTranslation(lang, src)
+    const builtIn =
+      resolveStaticText(lang, src) ?? getLandingStaticTranslation(lang, src)
     const fromApi = apiTranslations[i]?.trim()
     map.set(src, builtIn ?? (fromApi && fromApi !== src ? fromApi : src))
   })

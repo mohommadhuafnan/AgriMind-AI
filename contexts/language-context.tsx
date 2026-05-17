@@ -9,36 +9,40 @@ import {
   useState,
 } from "react"
 import { toast } from "sonner"
+import { fetchLiveTranslations } from "@/lib/i18n/client-translate-queue"
+import { resolveStaticTexts } from "@/lib/i18n/resolve-static"
 import {
-  UI_CATALOG,
-  UI_CATALOG_KEYS,
-  type UiCatalogKey,
-} from "@/lib/i18n/ui-catalog"
+  getCachedTranslations,
+  getPageTranslationCache,
+  getStoredLanguage,
+  setCachedTranslations,
+  setPageTranslationCache,
+  setStoredLanguage,
+} from "@/lib/i18n/storage"
 import {
   getStaticUiTranslations,
   hasBuiltInShellTranslations,
-  isCatalogComplete,
+  isShellCatalogComplete,
   mergeTranslations,
   type TranslationMap,
 } from "@/lib/i18n/static-ui"
-import {
-  getCachedTranslations,
-  getStoredLanguage,
-  setCachedTranslations,
-  setStoredLanguage,
-} from "@/lib/i18n/storage"
+import { UI_USES_STATIC_TRANSLATIONS } from "@/lib/i18n/translation-policy"
 import {
   getAsianLanguage,
   getLanguagesByRegion,
   type AsianLanguage,
 } from "@/lib/i18n/languages"
 import type { SupportedLanguage } from "@/types"
+import { UI_CATALOG, type UiCatalogKey } from "@/lib/i18n/ui-catalog"
 
 interface LanguageContextValue {
   language: SupportedLanguage
   setLanguage: (lang: SupportedLanguage) => Promise<void>
   t: (key: UiCatalogKey) => string
+  /** Static + cache only — for landing page DOM (no API). */
   translateTexts: (texts: string[]) => Promise<string[]>
+  /** Rate-limited API — diagnosis reports only. */
+  translateTextsLive: (texts: string[]) => Promise<string[]>
   isTranslating: boolean
   isPageTranslating: boolean
   setPageTranslating: (value: boolean) => void
@@ -47,35 +51,10 @@ interface LanguageContextValue {
 
 const LanguageContext = createContext<LanguageContextValue | null>(null)
 
-async function fetchBatchTranslations(
-  texts: string[],
-  target: SupportedLanguage
-): Promise<string[]> {
-  const CHUNK = 10
-  const out: string[] = []
-
-  for (let i = 0; i < texts.length; i += CHUNK) {
-    const chunk = texts.slice(i, i + CHUNK)
-    const res = await fetch("/api/valsea/translate-batch", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ texts: chunk, target, source: "en" }),
-    })
-    const json = await res.json()
-    if (!res.ok) {
-      const msg = json.error ?? "Translation failed"
-      if (res.status === 503) {
-        throw new Error(
-          `${msg} Restart \`npm run dev\` after updating .env.local, or redeploy Vercel after adding the env var.`
-        )
-      }
-      throw new Error(msg)
-    }
-    const part = (json.data?.translations as string[]) ?? chunk
-    out.push(...part)
-  }
-
-  return out
+function buildCatalogMap(lang: SupportedLanguage): TranslationMap {
+  const staticMap = getStaticUiTranslations(lang)
+  const cached = getCachedTranslations(lang)
+  return mergeTranslations(lang, staticMap, cached as TranslationMap)
 }
 
 export function LanguageProvider({
@@ -89,7 +68,7 @@ export function LanguageProvider({
     initialLanguage ?? "en"
   )
   const [map, setMap] = useState<TranslationMap>({})
-  const [isTranslating, setIsTranslating] = useState(false)
+  const [isTranslating] = useState(false)
   const [isPageTranslating, setPageTranslating] = useState(false)
   const languageGroups = useMemo(() => getLanguagesByRegion(), [])
 
@@ -99,44 +78,18 @@ export function LanguageProvider({
       return
     }
 
-    const staticMap = getStaticUiTranslations(lang)
-    if (staticMap) {
-      setMap(staticMap)
-    }
+    const merged = buildCatalogMap(lang)
+    setMap(merged)
 
-    const cached = getCachedTranslations(lang)
-    if (cached && isCatalogComplete(cached as TranslationMap)) {
-      setMap(mergeTranslations(lang, staticMap, cached as TranslationMap))
-      return
-    }
-
-    if (hasBuiltInShellTranslations(lang) && staticMap) {
-      setIsTranslating(false)
-    } else {
-      setIsTranslating(true)
-    }
-
-    try {
-      const english = UI_CATALOG_KEYS.map((k) => UI_CATALOG[k])
-      const translated = await fetchBatchTranslations(english, lang)
-      const fromApi: TranslationMap = {}
-      UI_CATALOG_KEYS.forEach((key, i) => {
-        fromApi[key] = translated[i] ?? UI_CATALOG[key]
-      })
-      const merged = mergeTranslations(lang, staticMap, fromApi, cached as TranslationMap)
-      setMap(merged)
-      setCachedTranslations(lang, merged as Record<string, string>)
-    } catch (err) {
-      if (!staticMap) {
-        toast.error(
-          err instanceof Error ? err.message : "Valsea translation failed",
-          { id: "valsea-translate-error" }
-        )
-        setMap({})
+    if (UI_USES_STATIC_TRANSLATIONS && hasBuiltInShellTranslations(lang)) {
+      if (isShellCatalogComplete(merged)) {
+        setCachedTranslations(lang, merged as Record<string, string>)
+        return
       }
-    } finally {
-      setIsTranslating(false)
     }
+
+    // No bulk Valsea/OpenAI for UI catalog — show English for any missing keys
+    setCachedTranslations(lang, merged as Record<string, string>)
   }, [])
 
   useEffect(() => {
@@ -165,9 +118,7 @@ export function LanguageProvider({
       }
       if (lang !== "en") {
         const info = getAsianLanguage(lang) as AsianLanguage
-        toast.success(`${info.nativeLabel} — translating site…`, {
-          duration: 2000,
-        })
+        toast.success(`${info.nativeLabel}`, { duration: 1500 })
       }
     },
     [loadCatalog]
@@ -183,17 +134,56 @@ export function LanguageProvider({
 
   const translateTexts = useCallback(
     async (texts: string[]) => {
-      if (language === "en") return texts
-      if (texts.length === 0) return texts
+      if (language === "en" || texts.length === 0) return texts
+
+      const pageCache = getPageTranslationCache(language) ?? {}
+      const { resolved, missingIndices } = resolveStaticTexts(language, texts)
+
+      const stillMissing: number[] = []
+      for (const i of missingIndices) {
+        const src = texts[i]
+        const cached = pageCache[src]
+        if (cached) {
+          resolved[i] = cached
+        } else {
+          stillMissing.push(i)
+        }
+      }
+
+      // Save newly resolved static strings into page cache
+      if (missingIndices.length > 0) {
+        const updated = { ...pageCache }
+        missingIndices.forEach((i) => {
+          if (resolved[i] !== texts[i]) updated[texts[i]] = resolved[i]
+        })
+        setPageTranslationCache(language, updated)
+      }
+
+      return resolved
+    },
+    [language]
+  )
+
+  const translateTextsLive = useCallback(
+    async (texts: string[]) => {
+      if (language === "en" || texts.length === 0) return texts
+
+      const { resolved, missingIndices } = resolveStaticTexts(language, texts)
+      if (missingIndices.length === 0) return resolved
+
+      const toTranslate = missingIndices.map((i) => texts[i])
       try {
-        return await fetchBatchTranslations(texts, language)
+        const live = await fetchLiveTranslations(toTranslate, language)
+        missingIndices.forEach((origIndex, j) => {
+          resolved[origIndex] = live[j] ?? texts[origIndex]
+        })
+        return resolved
       } catch (err) {
-        const msg =
-          err instanceof Error
-            ? err.message
-            : "Could not translate page content."
-        toast.error(msg, { id: "valsea-translate-error" })
-        return texts
+        toast.error(
+          err instanceof Error ? err.message : "Live translation unavailable",
+          { id: "valsea-translate-error" }
+        )
+        return resolved
       }
     },
     [language]
@@ -205,6 +195,7 @@ export function LanguageProvider({
       setLanguage,
       t,
       translateTexts,
+      translateTextsLive,
       isTranslating: isTranslating || isPageTranslating,
       isPageTranslating,
       setPageTranslating,
@@ -215,6 +206,7 @@ export function LanguageProvider({
       setLanguage,
       t,
       translateTexts,
+      translateTextsLive,
       isTranslating,
       isPageTranslating,
       languageGroups,

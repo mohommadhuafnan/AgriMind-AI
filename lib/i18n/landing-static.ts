@@ -98,6 +98,27 @@ const LANDING: Partial<Record<SupportedLanguage, Record<string, string>>> = {
     "Let me analyze further. Can you upload a photo?":
       "மேலும் பகுப்பாய்வு செய்கிறேன். புகைப்படம் பதிவேற்ற முடியுமா?",
   },
+  hi: {
+    Features: "विशेषताएं",
+    "How It Works": "कैसे काम करता है",
+    Crops: "फसलें",
+    Testimonials: "प्रशंसापत्र",
+    Pricing: "मूल्य निर्धारण",
+    "Sign In": "साइन इन",
+    "Get Started": "शुरू करें",
+    "Start Free": "मुफ्त शुरू करें",
+    "AI Voice Assistant": "AI वॉइस असिस्टेंट",
+    "Your AI Farming Partner": "आपका AI कृषि साथी",
+    "From Seed To Harvest": "बीज से फसल तक",
+    "AI-Powered Farming Assistant": "AI संचालित कृषि सहायक",
+    "Watch Demo": "डेमो देखें",
+    "Active Farmers": "सक्रिय किसान",
+    "Accuracy Rate": "सटीकता दर",
+    "AI Support": "AI सहायता",
+    Online: "ऑनलाइन",
+    "Type or speak your question...": "अपना प्रश्न टाइप करें या बोलें...",
+    "Scroll to explore": "और देखने के लिए स्क्रॉल करें",
+  },
 }
 
 export function getLandingStaticTranslation(

@@ -7,6 +7,7 @@ import {
   getPageTranslationCache,
   setPageTranslationCache,
 } from "@/lib/i18n/storage"
+import { PAGE_DOM_USES_LIVE_API } from "@/lib/i18n/translation-policy"
 import {
   applyTextTranslation,
   collectPlaceholderTargets,
@@ -14,6 +15,7 @@ import {
   resolveTranslations,
   restoreEnglishPage,
 } from "@/lib/i18n/page-translator-client"
+
 export function AutoTranslateMain({ children }: { children: React.ReactNode }) {
   const { language, translateTexts, setPageTranslating } = useLanguage()
   const pathname = usePathname()
@@ -21,10 +23,16 @@ export function AutoTranslateMain({ children }: { children: React.ReactNode }) {
   const runId = useRef(0)
   const applyingRef = useRef(false)
   const cacheRef = useRef<Record<string, Record<string, string>>>({})
+  const translatedOnceRef = useRef<string>("")
 
   const runTranslation = useCallback(async () => {
     const root = rootRef.current
     if (!root || language === "en") return
+
+    const runKey = `${language}:${pathname}`
+    if (!PAGE_DOM_USES_LIVE_API && translatedOnceRef.current === runKey) {
+      return
+    }
 
     const currentRun = ++runId.current
     setPageTranslating(true)
@@ -47,6 +55,7 @@ export function AutoTranslateMain({ children }: { children: React.ReactNode }) {
         cacheRef.current[language] ??
         getPageTranslationCache(language) ??
         {}
+
       const missing = sources.filter((s) => !langCache[s])
 
       if (missing.length > 0) {
@@ -81,12 +90,14 @@ export function AutoTranslateMain({ children }: { children: React.ReactNode }) {
       } finally {
         applyingRef.current = false
       }
+
+      translatedOnceRef.current = runKey
     } finally {
       if (currentRun === runId.current) {
         setPageTranslating(false)
       }
     }
-  }, [language, translateTexts, setPageTranslating])
+  }, [language, pathname, translateTexts, setPageTranslating])
 
   useEffect(() => {
     const root = rootRef.current
@@ -94,32 +105,16 @@ export function AutoTranslateMain({ children }: { children: React.ReactNode }) {
 
     if (language === "en") {
       restoreEnglishPage(root)
+      translatedOnceRef.current = ""
       return
     }
 
     const initial = window.setTimeout(() => {
       void runTranslation()
-    }, 400)
-
-    const observerDebounce = { current: 0 as ReturnType<typeof setTimeout> | 0 }
-
-    const observer = new MutationObserver(() => {
-      if (applyingRef.current) return
-      window.clearTimeout(observerDebounce.current)
-      observerDebounce.current = window.setTimeout(() => {
-        void runTranslation()
-      }, 800)
-    })
-
-    observer.observe(root, {
-      childList: true,
-      subtree: true,
-    })
+    }, 300)
 
     return () => {
       window.clearTimeout(initial)
-      window.clearTimeout(observerDebounce.current)
-      observer.disconnect()
     }
   }, [language, pathname, runTranslation])
 
