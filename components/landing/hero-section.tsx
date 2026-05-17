@@ -47,9 +47,10 @@ export function HeroSection() {
 
             {/* Subheading */}
             <p className="mt-6 text-lg sm:text-xl text-muted-foreground max-w-xl mx-auto lg:mx-0 leading-relaxed">
-              AgriMind AI helps Sri Lankan farmers with crop disease detection, 
-              multilingual voice support, and smart farming guidance. Available 24/7 
-              in Sinhala, Tamil, and English.
+              AgriMind AI helps Sri Lankan farmers with crop disease detection,
+              multilingual voice support, and smart farming guidance. Understands
+              Asian accented speech — Singlish, Chinglish, Sichuanese, Vietnamese,
+              Bahasa, Thai, Tamil, and more.
             </p>
 
             {/* CTA Buttons */}

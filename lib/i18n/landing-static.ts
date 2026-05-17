@@ -41,8 +41,8 @@ const LANDING: Partial<Record<SupportedLanguage, Record<string, string>>> = {
     "Generating treatment plan...": "ප්‍රතිකාර සැලසුම සකසමින්...",
     "Speak in Sinhala, Tamil, or English — Valsea transcribes your voice, OpenAI answers, and natural text-to-speech reads replies aloud.":
       "සිංහල, දෙමළ හෝ ඉංග්‍රීසියෙන් කතා කරන්න — Valsea ඔබේ හඬ ලියා තබා, OpenAI පිළිතුරු දෙයි.",
-    "AgriMind AI helps Sri Lankan farmers with crop disease detection, multilingual voice support, and smart farming guidance. Available 24/7 in Sinhala, Tamil, and English.":
-      "AgriMind AI ශ්‍රී ලංකාවේ ගොවීන්ට බෝග රෝග හඳුනාගැනීම, බහුභාෂා හඬ සහාය සහ ස්මාර්ට් ගොවි මාර්ගෝපදේශනය සපයයි. සිංහල, දෙමළ සහ ඉංග්‍රීසියෙන් 24/7.",
+    "AgriMind AI helps Sri Lankan farmers with crop disease detection, multilingual voice support, and smart farming guidance. Understands Asian accented speech — Singlish, Chinglish, Sichuanese, Vietnamese, Bahasa, Thai, Tamil, and more.":
+      "AgriMind AI ශ්‍රී ලංකාවේ ගොවීන්ට බෝග රෝග හඳුනාගැනීම, බහුභාෂා හඬ සහාය සහ ස්මාර්ට් ගොවි මාර්ගෝපදේශනය සපයයි. ආසියානු උච්චාරණ සහිත කථනය අවබෝධ කරයි — Singlish, Chinglish, Sichuanese, Vietnamese, Bahasa, Thai, Tamil ආදිය.",
     "My tomato leaves are turning yellow with brown spots":
       "මගේ තක්කාලි කොළ කහ පැහැයට හැරෙමින් දුඹුරු ලුණු තිබේ",
     "Based on your description, this appears to be": "ඔබේ විස්තරය අනුව, මෙය විය හැක්කේ",
@@ -89,8 +89,8 @@ const LANDING: Partial<Record<SupportedLanguage, Record<string, string>>> = {
     "Generating treatment plan...": "சிகிச்சை திட்டம் உருவாக்கப்படுகிறது...",
     "Speak in Sinhala, Tamil, or English — Valsea transcribes your voice, OpenAI answers, and natural text-to-speech reads replies aloud.":
       "சிங்களம், தமிழ் அல்லது ஆங்கிலத்தில் பேசுங்கள் — Valsea உங்கள் குரலை எழுத்துபெயர்க்கிறது, OpenAI பதிலளிக்கிறது.",
-    "AgriMind AI helps Sri Lankan farmers with crop disease detection, multilingual voice support, and smart farming guidance. Available 24/7 in Sinhala, Tamil, and English.":
-      "AgriMind AI இலங்கை விவசாயிகளுக்கு பயிர் நோய் கண்டறிதல், பலமொழி குரல் ஆதரவு மற்றும் ஸ்மார்ட் விவசாய வழிகாட்டுதல் வழங்குகிறது. சிங்களம், தமிழ், ஆங்கிலம் 24/7.",
+    "AgriMind AI helps Sri Lankan farmers with crop disease detection, multilingual voice support, and smart farming guidance. Understands Asian accented speech — Singlish, Chinglish, Sichuanese, Vietnamese, Bahasa, Thai, Tamil, and more.":
+      "AgriMind AI இலங்கை விவசாயிகளுக்கு பயிர் நோய் கண்டறிதல், பலமொழி குரல் ஆதரவு மற்றும் ஸ்மார்ட் விவசாய வழிகாட்டுதல் வழங்குகிறது. ஆசிய உச்சரிப்பு குரல்களைப் புரிந்துகொள்கிறது — Singlish, Chinglish, Sichuanese, Vietnamese, Bahasa, Thai, Tamil முதலியன.",
     "My tomato leaves are turning yellow with brown spots":
       "என் தக்காளி இலைகள் பழுப்பு புள்ளிகளுடன் மஞ்சளாக மாறுகின்றன",
     "Based on your description, this appears to be": "உங்கள் விளக்கத்தின்படி, இது",
