@@ -142,7 +142,7 @@ export default function MarketPage() {
 
   const handleRefresh = () => {
     void refreshPrices()
-      .then(() => toast.success("Market prices refreshed with OpenAI"))
+      .then(() => toast.success("Market prices updated"))
       .catch((e) =>
         toast.error(e instanceof Error ? e.message : "Refresh failed")
       )
@@ -232,11 +232,6 @@ export default function MarketPage() {
             )}
             {refreshing ? "Updating prices…" : "Refresh prices (AI)"}
           </Button>
-          {!openAiConfigured && (
-            <p className="text-xs text-muted-foreground max-w-xs text-right">
-              Set OPENAI_API_KEY in .env.local to enable AI price updates.
-            </p>
-          )}
         </motion.div>
       </div>
 

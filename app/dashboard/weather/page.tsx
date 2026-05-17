@@ -66,7 +66,6 @@ export default function WeatherPage() {
     | null
     | undefined
   const location = weather?.location as { name?: string } | undefined
-  const source = String(weather?.source ?? "open-meteo")
   const lastUpdated = String(weather?.lastUpdated ?? "")
 
   const period = getWeatherTimePeriod({
@@ -144,9 +143,7 @@ export default function WeatherPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Weather</h1>
           <p className="text-muted-foreground">
-            {source === "google"
-              ? "Real-time weather via Google Weather API + AI farming analysis."
-              : "Forecast via Open-Meteo (add GOOGLE_WEATHER_API_KEY for live Google data)."}
+            Weather forecast and AI farming tips for your area.
           </p>
         </div>
         <motion.div
@@ -194,8 +191,7 @@ export default function WeatherPage() {
             exit={{ opacity: 0 }}
             className="text-muted-foreground"
           >
-            Unable to load weather. Check GOOGLE_WEATHER_API_KEY and enable Weather
-            API in Google Cloud Console.
+            Unable to load weather right now. Please try again in a moment.
           </motion.p>
         ) : (
           <motion.div
@@ -211,18 +207,11 @@ export default function WeatherPage() {
               className="flex items-center gap-2 text-sm text-muted-foreground"
             >
               <motion.span
-                className={`h-2 w-2 rounded-full ${
-                  source === "google" ? "bg-primary" : "bg-muted-foreground"
-                }`}
-                animate={
-                  source === "google"
-                    ? { scale: [1, 1.35, 1], opacity: [1, 0.65, 1] }
-                    : {}
-                }
+                className="h-2 w-2 rounded-full bg-primary"
+                animate={{ scale: [1, 1.35, 1], opacity: [1, 0.65, 1] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
               />
-              {source === "google" ? "Live (Google Weather)" : "Open-Meteo"} · Updated{" "}
-              {formatUpdated(lastUpdated)} ·{" "}
+              Updated {formatUpdated(lastUpdated)} ·{" "}
               <span className="capitalize">{period} scene</span>
               · Auto-refresh every 15 min
             </motion.div>
