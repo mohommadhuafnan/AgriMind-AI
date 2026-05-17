@@ -3,21 +3,24 @@
 import { motion } from "framer-motion"
 import { useState, useRef, useEffect, useCallback, Suspense } from "react"
 import { ChatPromptFromUrl } from "@/components/dashboard/chat-prompt-from-url"
+import { ChatVoiceSettings } from "@/components/dashboard/chat/chat-voice-settings"
+import { LiveVoiceTextarea } from "@/components/dashboard/voice/live-voice-textarea"
+import { VoiceMessageActions } from "@/components/dashboard/voice/voice-message-actions"
 import {
   Send,
   Sparkles,
   Loader2,
-  Image as ImageIcon,
   Mic,
   MoreVertical,
   Trash2,
   Download,
   Clock,
   CheckCircle,
+  Volume2,
+  Square,
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +33,7 @@ import { useAiChat } from "@/hooks/use-ai-chat"
 import { useVoiceInput } from "@/hooks/use-voice-input"
 import { getChatWelcomeMessage } from "@/lib/chat/welcome"
 import { getLanguageDisplayLabel } from "@/lib/i18n/languages"
+import { prefetchSpeech, preloadVoices, speakText, stopSpeaking } from "@/lib/voice/tts"
 import { toast } from "sonner"
 import type { ChatMessageInput } from "@/types/ai"
 import type { SupportedLanguage } from "@/types"
@@ -40,6 +44,7 @@ interface Message {
   content: string
   timestamp: Date
   status?: "sending" | "sent" | "error"
+  fromVoice?: boolean
 }
 
 function buildWelcomeMessage(language: SupportedLanguage): Message {
@@ -64,8 +69,14 @@ export default function ChatPage() {
     buildWelcomeMessage("en"),
   ])
   const [input, setInput] = useState("")
+  const [voiceReplies, setVoiceReplies] = useState(true)
+  const [autoSendVoice, setAutoSendVoice] = useState(true)
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null)
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const cancelSpeakRef = useRef<(() => void) | null>(null)
+
   const { sendMessage, isLoading: isTyping } = useAiChat(language)
   const {
     isListening,
@@ -73,7 +84,9 @@ export default function ChatPage() {
     isPartialTranscribing,
     isLiveTypingSupported,
     isChunkedLiveTyping,
-    toggleListening,
+    usesValseaVoice,
+    startListening,
+    stopListening,
   } = useVoiceInput(language)
 
   const applySearchPrompt = useCallback((prompt: string) => {
@@ -81,79 +94,132 @@ export default function ChatPage() {
     textareaRef.current?.focus()
   }, [])
 
+  const stopVoiceReply = useCallback(() => {
+    cancelSpeakRef.current?.()
+    stopSpeaking()
+    setSpeakingMessageId(null)
+  }, [])
+
+  const speakMessage = useCallback(
+    (messageId: string, text: string) => {
+      if (!text.trim()) return
+      stopVoiceReply()
+      cancelSpeakRef.current = speakText(text, language, {
+        onStart: () => setSpeakingMessageId(messageId),
+        onEnd: () => setSpeakingMessageId(null),
+        onError: () => setSpeakingMessageId(null),
+      })
+    },
+    [language, stopVoiceReply]
+  )
+
+  useEffect(() => {
+    preloadVoices()
+  }, [])
+
+  useEffect(() => {
+    return () => stopVoiceReply()
+  }, [stopVoiceReply])
+
   const handleLanguageChange = (code: SupportedLanguage) => {
+    stopVoiceReply()
     setLanguage(code)
     setMessages([buildWelcomeMessage(code)])
     setInput("")
   }
 
+  const submitMessage = useCallback(
+    async (userText: string, options?: { fromVoice?: boolean }) => {
+      const trimmed = userText.trim()
+      if (!trimmed || isTyping) return
+
+      stopVoiceReply()
+
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        type: "user",
+        content: trimmed,
+        timestamp: new Date(),
+        status: "sent",
+        fromVoice: options?.fromVoice,
+      }
+
+      setMessages((prev) => [...prev, userMessage])
+      setInput("")
+
+      const history: ChatMessageInput[] = messages.map((m) => ({
+        role: m.type === "user" ? ("user" as const) : ("assistant" as const),
+        content: m.content,
+      }))
+
+      const reply = await sendMessage(trimmed, history)
+      if (!reply) return
+
+      const aiId = (Date.now() + 1).toString()
+      const aiMessage: Message = {
+        id: aiId,
+        type: "ai",
+        content: reply,
+        timestamp: new Date(),
+      }
+
+      setMessages((prev) => [...prev, aiMessage])
+
+      if (voiceReplies) {
+        prefetchSpeech(reply, language)
+        speakMessage(aiId, reply)
+      }
+    },
+    [isTyping, language, messages, sendMessage, speakMessage, stopVoiceReply, voiceReplies]
+  )
+
   const handleMicClick = async () => {
     if (isTyping) return
+    if (speakingMessageId) stopVoiceReply()
+
     if (isListening) {
-      const result = await toggleListening()
-      if (result?.text) {
-        setInput(result.text)
-        textareaRef.current?.focus()
-        toast.success("Voice captured — press send or Enter")
+      const { text, errorShown } = await stopListening()
+      const finalText = (text ?? input).trim()
+      setInput(finalText)
+
+      if (!finalText && !errorShown) {
+        toast.error(
+          usesValseaVoice
+            ? `No speech detected. Speak in ${getLanguageDisplayLabel(language)}, hold the mic 2+ seconds, then tap again.`
+            : "No speech detected. Speak clearly, then tap the mic again."
+        )
+        return
       }
-    } else {
-      await toggleListening({
-        initialText: input,
-        onTextChange: setInput,
-      })
-      if (isLiveTypingSupported) {
-        toast.message("Listening… words appear as you speak", { duration: 2500 })
+
+      if (finalText) {
+        if (autoSendVoice) {
+          await submitMessage(finalText, { fromVoice: true })
+        } else {
+          toast.message("Voice message ready — tap Send", { duration: 3000 })
+          textareaRef.current?.focus()
+        }
       }
+      return
     }
+
+    const started = await startListening({
+      initialText: input,
+      onTextChange: setInput,
+    })
+    if (!started) return
+    textareaRef.current?.focus()
   }
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+  }, [messages, isTyping])
 
-  useEffect(() => {
-    if (!isListening || !textareaRef.current) return
-    const el = textareaRef.current
-    el.scrollTop = el.scrollHeight
-  }, [input, isListening])
-
-  const handleSend = async () => {
-    if (!input.trim()) return
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      type: "user",
-      content: input,
-      timestamp: new Date(),
-      status: "sent",
-    }
-
-    const userText = input.trim()
-    setMessages((prev) => [...prev, userMessage])
-    setInput("")
-
-    const history: ChatMessageInput[] = messages.map((m) => ({
-      role: m.type === "user" ? ("user" as const) : ("assistant" as const),
-      content: m.content,
-    }))
-
-    const reply = await sendMessage(userText, history)
-    if (!reply) return
-
-    const aiMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      type: "ai",
-      content: reply,
-      timestamp: new Date(),
-    }
-
-    setMessages((prev) => [...prev, aiMessage])
-  }
+  const handleSend = () => void submitMessage(input)
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
-      handleSend()
+      void handleSend()
     }
   }
 
@@ -163,15 +229,19 @@ export default function ChatPage() {
   }
 
   const clearChat = () => {
+    stopVoiceReply()
     setMessages([buildWelcomeMessage(language)])
   }
 
+  const inputDisabled = isTranscribing || (isTyping && !isListening)
+  const micBusy = isTranscribing
+
   return (
-    <div className="h-[calc(100vh-7rem)] flex flex-col max-w-4xl mx-auto">
+    <div className="mx-auto flex h-[calc(100vh-7rem)] max-w-4xl flex-col">
       <Suspense fallback={null}>
         <ChatPromptFromUrl onPrompt={applySearchPrompt} />
       </Suspense>
-      {/* Header */}
+
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -183,13 +253,19 @@ export default function ChatPage() {
               <Sparkles className="h-3 w-3" />
               OpenAI + VALSEA.ai
             </Badge>
-            <Badge variant="outline" className="text-xs">
-              15 Asian languages
+            <Badge variant="outline" className="gap-1 border-primary/30 text-primary">
+              <Mic className="h-3 w-3" />
+              Voice chat
             </Badge>
+            {usesValseaVoice && (
+              <Badge variant="outline" className="text-xs">
+                {getLanguageDisplayLabel(language)} · VALSEA mic
+              </Badge>
+            )}
           </div>
           <h1 className="text-2xl font-bold text-foreground">AI Chat</h1>
           <p className="text-muted-foreground">
-            Your 24/7 farming assistant — replies in the language you choose
+            Type or speak — AgriMind replies in text and voice
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -197,8 +273,20 @@ export default function ChatPage() {
             value={language}
             onChange={handleLanguageChange}
             disabled={isTyping || isListening}
-            headerSubtitle="Chat & voice via VALSEA translation"
+            headerSubtitle="Chat, voice input & voice replies"
           />
+          {speakingMessageId && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1 border-red-500/40 text-red-600 dark:text-red-400"
+              onClick={stopVoiceReply}
+            >
+              <Square className="h-3.5 w-3.5 fill-current" />
+              Stop voice
+            </Button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -207,11 +295,11 @@ export default function ChatPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={clearChat}>
-                <Trash2 className="h-4 w-4 mr-2" />
+                <Trash2 className="mr-2 h-4 w-4" />
                 Clear Chat
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="mr-2 h-4 w-4" />
                 Export Chat
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -219,10 +307,8 @@ export default function ChatPage() {
         </div>
       </motion.div>
 
-      {/* Chat Container */}
-      <Card className="flex-1 flex flex-col overflow-hidden">
-        {/* Messages */}
-        <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+      <Card className="flex flex-1 flex-col overflow-hidden">
+        <CardContent className="flex-1 space-y-4 overflow-y-auto p-4">
           {messages.map((message) => (
             <motion.div
               key={message.id}
@@ -238,57 +324,96 @@ export default function ChatPage() {
                 }`}
               >
                 {message.type === "ai" && (
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
+                  <motion.div className="mb-2 flex items-center gap-2">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10">
                       <Sparkles className="h-3.5 w-3.5 text-primary" />
                     </div>
                     <span className="text-xs font-medium text-primary">AgriMind AI</span>
+                  </motion.div>
+                )}
+                {message.type === "user" && message.fromVoice && (
+                  <div className="mb-1 flex items-center gap-1 text-primary-foreground/80">
+                    <Mic className="h-3 w-3" />
+                    <span className="text-[10px] font-medium uppercase tracking-wide">
+                      Voice message
+                    </span>
                   </div>
                 )}
                 <div
-                  className={`text-sm whitespace-pre-wrap ${
-                    message.type === "user" ? "text-primary-foreground" : "text-foreground"
+                  className={`whitespace-pre-wrap text-sm ${
+                    message.type === "user"
+                      ? "text-primary-foreground"
+                      : "text-foreground"
                   }`}
                 >
                   {message.content}
                 </div>
-                <div className={`flex items-center gap-1 mt-2 ${
-                  message.type === "user" ? "justify-end" : "justify-start"
-                }`}>
-                  <Clock className={`h-3 w-3 ${
-                    message.type === "user" ? "text-primary-foreground/60" : "text-muted-foreground"
-                  }`} />
-                  <span className={`text-xs ${
-                    message.type === "user" ? "text-primary-foreground/60" : "text-muted-foreground"
-                  }`}>
-                    {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                {message.type === "ai" && message.id !== "welcome" && (
+                  <VoiceMessageActions
+                    content={message.content}
+                    isSpeaking={speakingMessageId === message.id}
+                    onSpeak={() => speakMessage(message.id, message.content)}
+                    onStop={stopVoiceReply}
+                  />
+                )}
+                <div
+                  className={`mt-2 flex items-center gap-1 ${
+                    message.type === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  <Clock
+                    className={`h-3 w-3 ${
+                      message.type === "user"
+                        ? "text-primary-foreground/60"
+                        : "text-muted-foreground"
+                    }`}
+                  />
+                  <span
+                    className={`text-xs ${
+                      message.type === "user"
+                        ? "text-primary-foreground/60"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {message.timestamp.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </span>
                   {message.type === "user" && message.status === "sent" && (
-                    <CheckCircle className="h-3 w-3 text-primary-foreground/60 ml-1" />
+                    <CheckCircle className="ml-1 h-3 w-3 text-primary-foreground/60" />
                   )}
                 </div>
               </div>
             </motion.div>
           ))}
 
-          {/* Typing Indicator */}
           {isTyping && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="flex justify-start"
             >
-              <div className="bg-muted rounded-2xl rounded-tl-md px-4 py-3">
+              <div className="rounded-2xl rounded-tl-md bg-muted px-4 py-3">
                 <div className="flex items-center gap-2">
                   <div className="flex gap-1">
-                    <span className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <span className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <span className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "300ms" }} />
+                    <span
+                      className="h-2 w-2 animate-bounce rounded-full bg-primary"
+                      style={{ animationDelay: "0ms" }}
+                    />
+                    <span
+                      className="h-2 w-2 animate-bounce rounded-full bg-primary"
+                      style={{ animationDelay: "150ms" }}
+                    />
+                    <span
+                      className="h-2 w-2 animate-bounce rounded-full bg-primary"
+                      style={{ animationDelay: "300ms" }}
+                    />
                   </div>
                   <span className="text-sm text-muted-foreground">
                     {language === "en"
                       ? "AgriMind is thinking..."
-                      : `Translating to ${getLanguageDisplayLabel(language)}…`}
+                      : `Replying in ${getLanguageDisplayLabel(language)}…`}
                   </span>
                 </div>
               </div>
@@ -298,16 +423,16 @@ export default function ChatPage() {
           <div ref={messagesEndRef} />
         </CardContent>
 
-        {/* Suggested Questions */}
         {messages.length <= 2 && (
           <div className="px-4 pb-2">
-            <p className="text-xs text-muted-foreground mb-2">Suggested questions:</p>
+            <p className="mb-2 text-xs text-muted-foreground">Suggested questions:</p>
             <div className="flex flex-wrap gap-2">
-              {suggestedQuestions.map((question, index) => (
+              {suggestedQuestions.map((question) => (
                 <button
-                  key={index}
+                  key={question}
+                  type="button"
                   onClick={() => handleSuggestionClick(question)}
-                  className="px-3 py-1.5 text-xs rounded-full bg-muted hover:bg-muted/80 text-foreground transition-colors"
+                  className="rounded-full bg-muted px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-muted/80"
                 >
                   {question}
                 </button>
@@ -316,71 +441,99 @@ export default function ChatPage() {
           </div>
         )}
 
-        {/* Input Area */}
-        <div className="p-4 border-t border-border">
+        <div className="border-t border-border p-4">
+          <div className="mb-3">
+            <ChatVoiceSettings
+              voiceReplies={voiceReplies}
+              onVoiceRepliesChange={setVoiceReplies}
+              autoSendVoice={autoSendVoice}
+              onAutoSendVoiceChange={setAutoSendVoice}
+              disabled={isTyping || isListening}
+            />
+          </div>
+
+          <p className="mb-2 text-center text-xs text-muted-foreground">
+            {isListening
+              ? usesValseaVoice
+                ? "Speak — VALSEA types your message · tap mic again to send"
+                : "Speak — tap mic again when finished"
+              : voiceReplies
+                ? "Tap mic for voice message · AI answers with text and voice"
+                : "Tap mic to dictate · enable AI voice replies to hear answers"}
+          </p>
+
           <div className="flex items-end gap-2">
-            <Button variant="ghost" size="icon" className="shrink-0">
-              <ImageIcon className="h-5 w-5 text-muted-foreground" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`shrink-0 ${isListening ? "bg-destructive/10 text-destructive" : ""}`}
+              onClick={() => void handleMicClick()}
+              disabled={micBusy}
+              title={
+                isListening
+                  ? "Stop recording and send"
+                  : "Record voice message"
+              }
+            >
+              {micBusy ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Mic className={`h-5 w-5 ${isListening ? "animate-pulse" : ""}`} />
+              )}
             </Button>
-            <Textarea
+
+            <LiveVoiceTextarea
               ref={textareaRef}
               value={input}
+              isListening={isListening}
+              animateChunked={isChunkedLiveTyping}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
+              disabled={inputDisabled}
               placeholder={
                 isTranscribing
                   ? "Finalizing speech…"
                   : isPartialTranscribing
                     ? "Updating as you speak…"
                     : isListening
-                      ? isLiveTypingSupported
-                        ? "Speak — words appear here as you talk"
-                        : "Speak — text fills in while you talk"
+                      ? "Speak now — your message appears here…"
                       : language === "en"
-                        ? "Ask anything about farming..."
-                        : `Ask in ${getLanguageDisplayLabel(language)} or English…`
+                        ? "Type or tap mic to ask about farming…"
+                        : `Ask in ${getLanguageDisplayLabel(language)}…`
               }
               rows={1}
-              className={`resize-none min-h-[44px] max-h-[120px] transition-colors ${
+              className={`min-h-[48px] max-h-[120px] resize-none ${
                 isListening
-                  ? "ring-2 ring-primary/40 bg-primary/5 border-primary"
+                  ? "border-primary ring-2 ring-primary/30 bg-primary/5"
                   : ""
               }`}
             />
+
             <Button
-              variant="ghost"
-              size="icon"
-              className={`shrink-0 ${isListening ? "text-destructive animate-pulse" : ""}`}
-              onClick={handleMicClick}
-              disabled={isTranscribing}
-              title={
-                isListening
-                  ? "Stop — finish live typing"
-                  : isLiveTypingSupported
-                    ? "Speak — live text in box"
-                    : "Voice input"
-              }
-            >
-              {isTranscribing ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Mic className="h-5 w-5" />
-              )}
-            </Button>
-            <Button
-              onClick={handleSend}
-              disabled={!input.trim() || isTyping}
+              onClick={() => void handleSend()}
+              disabled={!input.trim() || isTyping || isListening}
               size="icon"
               className="shrink-0"
+              title={isListening ? "Send after stopping mic" : "Send message"}
             >
               {isTyping ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
+              ) : isListening ? (
+                <span className="text-xs font-medium">Send</span>
               ) : (
                 <Send className="h-5 w-5" />
               )}
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground mt-2 text-center">
+
+          {voiceReplies && (
+            <p className="mt-2 flex items-center justify-center gap-1 text-center text-[10px] text-primary">
+              <Volume2 className="h-3 w-3" />
+              AI voice replies on
+            </p>
+          )}
+
+          <p className="mt-2 text-center text-xs text-muted-foreground">
             AgriMind AI can make mistakes. Verify important farming advice with local experts.
           </p>
         </div>
