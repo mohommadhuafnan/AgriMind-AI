@@ -5,8 +5,10 @@ import { toast } from "sonner"
 import { useRealtimeSpeechInput } from "@/hooks/use-realtime-speech-input"
 import {
   isBrowserSpeechRecognitionSupported,
+  prefersValseaVoiceTranscription,
   supportsLiveBrowserStt,
 } from "@/lib/voice/speech-recognition"
+import { getLanguageDisplayLabel } from "@/lib/i18n/languages"
 import {
   audioFilenameForMime,
   pickAudioMimeType,
@@ -78,12 +80,17 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
       ? AUTO_DETECT_LANGUAGE
       : languagePreference
 
+  const prefersValsea = prefersValseaVoiceTranscription(languagePreference)
+
   const liveSttCapable =
+    !prefersValsea &&
     isBrowserSpeechRecognitionSupported() &&
     supportsLiveBrowserStt(languagePreference)
 
   const needsRecorderOnListen =
-    isAutoDetectLanguage(languagePreference) || !liveSttCapable
+    prefersValsea ||
+    isAutoDetectLanguage(languagePreference) ||
+    !liveSttCapable
 
   const pushLiveText = useCallback((text: string) => {
     setLiveText(text)
@@ -340,7 +347,7 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
         setBrowserStt(browserSttOk)
       }
 
-      useChunkedLiveRef.current = !browserSttOk
+      useChunkedLiveRef.current = prefersValsea || !browserSttOk
 
       if (browserSttOk && !needsRecorderOnListen) {
         toast.message("Listening… speak and watch words type in the box", {
@@ -364,7 +371,15 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
         return false
       }
 
-      if (browserSttOk) {
+      if (prefersValsea) {
+        const langLabel = isAutoDetectLanguage(languagePreference)
+          ? "your language"
+          : getLanguageDisplayLabel(languagePreference)
+        toast.message(
+          `Listening with VALSEA — speak in ${langLabel}, text appears in the box`,
+          { duration: 4000 }
+        )
+      } else if (browserSttOk) {
         toast.message("Listening… words type live as you speak", {
           duration: 3500,
         })
@@ -381,6 +396,8 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
       beginRecorder,
       liveSttCapable,
       needsRecorderOnListen,
+      languagePreference,
+      prefersValsea,
       pushLiveText,
       realtime,
       releaseStream,
@@ -405,10 +422,11 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
 
     let valseaText: string | null = null
     const shouldUseValsea =
+      prefersValsea ||
       isAutoDetectLanguage(languagePreference) ||
       liveSttText.length < 2 ||
       !liveSttCapable ||
-      hasRecorder
+      Boolean(hasRecorder)
 
     if (liveSttText.length >= 2 && !shouldUseValsea) {
       skipTranscribeRef.current = true
@@ -442,6 +460,7 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
     clearPartialTimer,
     languagePreference,
     liveSttCapable,
+    prefersValsea,
     pushLiveText,
     realtime,
     releaseStream,
@@ -471,6 +490,7 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
     interimText: realtime.interimText || liveText,
     isLiveTypingSupported: liveSttCapable,
     isBrowserSttActive: browserSttActive,
+    usesValseaVoice: prefersValsea,
     isChunkedLiveTyping,
     startListening,
     stopListening,

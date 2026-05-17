@@ -2,6 +2,7 @@ import {
   AUTO_DETECT_LANGUAGE,
   getAsianLanguage,
   isAutoDetectLanguage,
+  prefersValseaVoiceTranscription,
 } from "@/lib/i18n/languages"
 import type { SupportedLanguage } from "@/types"
 
@@ -45,9 +46,12 @@ export function supportsLiveBrowserStt(
   code: SupportedLanguage | typeof AUTO_DETECT_LANGUAGE | string
 ): boolean {
   if (!isBrowserSpeechRecognitionSupported()) return false
+  if (prefersValseaVoiceTranscription(code)) return false
   if (isAutoDetectLanguage(code) || code === AUTO_DETECT_LANGUAGE) return true
   return Boolean(getAsianLanguage(code)?.bcp47)
 }
+
+export { prefersValseaVoiceTranscription } from "@/lib/i18n/languages"
 
 /** BCP-47 tag for Web Speech API live typing */
 export function browserSttLangForCode(

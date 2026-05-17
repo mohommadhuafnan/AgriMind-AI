@@ -40,6 +40,20 @@ const SI: StaticMap = {
 
   "header.search": "බෝග, රෝග, මාර්ගෝපදේශ සොයන්න...",
 
+  "search.pages": "පිටු",
+
+  "search.noResults": "පිටු නැත — AI එකෙන් අසන්න",
+
+  "search.ai": "AI",
+
+  "search.askAi": "AI වෙතින් අසන්න",
+
+  "search.phrase.disease": "තක්කාලි පත්‍ර රෝග උදව් සොයන්න...",
+
+  "search.phrase.voice": "හඬ සහායකය විවෘත කරන්න...",
+
+  "search.phrase.market": "වෙළඳපල මිල සොයන්න...",
+
   "header.notifications": "දැනුම්දීම්",
 
   "common.loading": "පරිවර්තනය වෙමින්…",
@@ -170,6 +184,20 @@ const TA: StaticMap = {
   "nav.signOut": "வெளியேறு",
 
   "header.search": "பயிர்கள், நோய்கள், வழிகாட்டிகள் தேடுங்கள்...",
+
+  "search.pages": "பக்கங்கள்",
+
+  "search.noResults": "பக்கங்கள் இல்லை — AI கேளுங்கள்",
+
+  "search.ai": "AI",
+
+  "search.askAi": "AI கேளுங்கள்",
+
+  "search.phrase.disease": "தக்காளி இலை நோய் உதவி தேடுங்கள்...",
+
+  "search.phrase.voice": "குரல் உதவியாளர் திறக்க...",
+
+  "search.phrase.market": "சந்தை விலை தேடுங்கள்...",
 
   "header.notifications": "அறிவிப்புகள்",
 
@@ -383,6 +411,20 @@ export const SHELL_CATALOG_KEYS: UiCatalogKey[] = [
   "nav.signOut",
 
   "header.search",
+
+  "search.pages",
+
+  "search.noResults",
+
+  "search.ai",
+
+  "search.askAi",
+
+  "search.phrase.disease",
+
+  "search.phrase.voice",
+
+  "search.phrase.market",
 
   "header.notifications",
 

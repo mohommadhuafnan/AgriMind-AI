@@ -2,7 +2,7 @@
 
 import { Menu } from "lucide-react"
 import { AgriMindLogo } from "@/components/brand/agrimind-logo"
-import { AnimatedSearchInput } from "@/components/dashboard/animated-search-input"
+import { DashboardGlobalSearch } from "@/components/dashboard/dashboard-global-search"
 import { NotificationDropdown } from "@/components/dashboard/notification-dropdown"
 import { DashboardProfileMenu } from "@/components/dashboard/dashboard-profile-menu"
 import { LiveDateTime } from "@/components/dashboard/live-datetime"
@@ -72,6 +72,9 @@ export function DashboardHeader({ onOpenMobileMenu }: DashboardHeaderProps) {
         <div className="border-t border-border/60 bg-muted/25 px-3 py-2">
           <LiveDateTime variant="mobile-bar" />
         </div>
+        <div className="border-t border-border/60 px-3 py-2.5">
+          <DashboardGlobalSearch variant="mobile" />
+        </div>
       </div>
 
       {/* Laptop & desktop: classic single-row toolbar */}
@@ -81,7 +84,7 @@ export function DashboardHeader({ onOpenMobileMenu }: DashboardHeaderProps) {
             variant="compact"
             className="shrink-0 border-r border-border pr-3 sm:pr-4"
           />
-          <AnimatedSearchInput className="min-w-0 flex-1 max-w-none lg:max-w-2xl" />
+          <DashboardGlobalSearch className="min-w-0 flex-1 max-w-none lg:max-w-2xl" />
         </div>
         <HeaderActions />
       </div>

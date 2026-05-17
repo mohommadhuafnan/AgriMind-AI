@@ -32,6 +32,20 @@ export const UI_CATALOG = {
 
   "header.search": "Search crops, diseases, guides...",
 
+  "search.pages": "Pages",
+
+  "search.noResults": "No pages found — try Ask AI below",
+
+  "search.ai": "AI",
+
+  "search.askAi": "Ask AI",
+
+  "search.phrase.disease": "Find tomato leaf disease help...",
+
+  "search.phrase.voice": "Open voice assistant...",
+
+  "search.phrase.market": "Search market prices...",
+
   "header.notifications": "Notifications",
 
   "lang.english": "English",

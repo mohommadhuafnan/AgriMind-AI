@@ -76,6 +76,18 @@ export function toValseaLanguageName(code: string): string {
   return getAsianLanguage(code)?.valsea ?? code
 }
 
+/**
+ * Use VALSEA.ai speech-to-text (not browser Web Speech).
+ * Browser STT is unreliable for Tamil, Sinhala, Hindi, etc.; English can use the browser.
+ */
+export function prefersValseaVoiceTranscription(
+  code: VoiceLanguagePreference | string
+): boolean {
+  if (code === AUTO_DETECT_LANGUAGE || code === "auto") return true
+  if (code === "en") return false
+  return isSupportedLanguage(code)
+}
+
 export function fromValseaLanguageName(name?: string): SupportedLanguage | null {
   if (!name?.trim()) return null
   const key = name.toLowerCase().trim()

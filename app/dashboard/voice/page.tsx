@@ -125,6 +125,7 @@ export default function VoiceAssistantPage() {
     isPartialTranscribing,
     isLiveTypingSupported,
     isChunkedLiveTyping,
+    usesValseaVoice,
     startListening,
     stopListening,
   } = useVoiceInput(languageMode)
@@ -310,7 +311,13 @@ export default function VoiceAssistantPage() {
       textareaRef.current?.focus()
       if (!finalText && !errorShown) {
         toast.error(
-          "No speech detected. Check your microphone, speak clearly, then tap the red button again."
+          usesValseaVoice
+            ? `No speech detected. Speak clearly in ${getLanguageDisplayLabel(
+                isAutoDetectLanguage(languageMode)
+                  ? lastDetected ?? activeLanguage
+                  : languageMode
+              )}, hold the mic 2+ seconds, then tap red again.`
+            : "No speech detected. Check your microphone, speak clearly, then tap the red button again."
         )
       } else if (finalText) {
         toast.message("Text ready — edit if needed, then tap Send", {
@@ -388,9 +395,15 @@ export default function VoiceAssistantPage() {
     : isPartialTranscribing
       ? "Typing what you said…"
       : isListening
-        ? textInput.trim()
-          ? "Keep speaking — text updates live in the box below"
-          : "Say hello (or anything) — it will type in the box as you speak"
+        ? usesValseaVoice
+          ? textInput.trim()
+            ? "VALSEA is typing — keep speaking, then tap red when done"
+            : `Speak in ${getLanguageDisplayLabel(
+                isAutoDetectLanguage(languageMode) ? activeLanguage : languageMode
+              )} — VALSEA puts words in the box`
+          : textInput.trim()
+            ? "Keep speaking — text updates live in the box below"
+            : "Say hello (or anything) — it will type in the box as you speak"
         : isSpeaking
           ? "AI voice playing — tap Stop voice to interrupt"
           : isProcessing
@@ -406,10 +419,12 @@ export default function VoiceAssistantPage() {
             <Badge variant="secondary" className="gap-1">
               <Sparkles className="h-3 w-3" />
               {isAutoDetectLanguage(languageMode)
-                ? "Auto detect + live text"
-                : isLiveTypingSupported
-                  ? "Live typing"
-                  : "Live voice → text"}
+                ? "Auto detect · VALSEA"
+                : usesValseaVoice
+                  ? `${getLanguageDisplayLabel(languageMode)} · VALSEA voice`
+                  : isLiveTypingSupported
+                    ? "Live typing"
+                    : "Live voice → text"}
             </Badge>
             <Badge variant="outline" className="gap-1 border-primary/30 text-primary">
               <Globe className="h-3 w-3" />

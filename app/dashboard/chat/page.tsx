@@ -1,7 +1,8 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback, Suspense } from "react"
+import { ChatPromptFromUrl } from "@/components/dashboard/chat-prompt-from-url"
 import {
   Send,
   Sparkles,
@@ -74,6 +75,11 @@ export default function ChatPage() {
     isChunkedLiveTyping,
     toggleListening,
   } = useVoiceInput(language)
+
+  const applySearchPrompt = useCallback((prompt: string) => {
+    setInput(prompt)
+    textareaRef.current?.focus()
+  }, [])
 
   const handleLanguageChange = (code: SupportedLanguage) => {
     setLanguage(code)
@@ -162,6 +168,9 @@ export default function ChatPage() {
 
   return (
     <div className="h-[calc(100vh-7rem)] flex flex-col max-w-4xl mx-auto">
+      <Suspense fallback={null}>
+        <ChatPromptFromUrl onPrompt={applySearchPrompt} />
+      </Suspense>
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
