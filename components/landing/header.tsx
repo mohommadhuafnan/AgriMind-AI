@@ -15,6 +15,7 @@ const navItems = [
   { name: "How It Works", href: "#how-it-works" },
   { name: "Crops", href: "#crops" },
   { name: "Testimonials", href: "#testimonials" },
+  { name: "Pricing", href: "#pricing" },
 ]
 
 export function Header() {

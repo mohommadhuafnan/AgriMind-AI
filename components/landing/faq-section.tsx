@@ -19,7 +19,7 @@ const faqs = [
   },
   {
     q: "Is AgriMind AI free to use?",
-    a: "Farmers can start with a free tier. Premium features for advanced analytics and officer support will be available in later phases.",
+    a: "Start with a 7-day free trial (no card required). Choose the 30-day plan (Rs. 790) for unlimited AI diagnosis and reminders, or the 1-year plan (Rs. 6,990) for the best value. See the Pricing section on this page for full details.",
   },
   {
     q: "How accurate is the disease detection?",

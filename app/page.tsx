@@ -8,6 +8,7 @@ import { CropsSection } from "@/components/landing/crops-section"
 import { MarketPreviewSection } from "@/components/landing/market-preview-section"
 import { TestimonialsSection } from "@/components/landing/testimonials-section"
 import { StatsSection } from "@/components/landing/stats-section"
+import { PricingSection } from "@/components/landing/pricing-section"
 import { StoriesSection } from "@/components/landing/stories-section"
 import { FAQSection } from "@/components/landing/faq-section"
 import { CTASection } from "@/components/landing/cta-section"
@@ -26,6 +27,7 @@ export default function Home() {
       <MarketPreviewSection />
       <TestimonialsSection />
       <StatsSection />
+      <PricingSection />
       <StoriesSection />
       <FAQSection />
       <CTASection />
