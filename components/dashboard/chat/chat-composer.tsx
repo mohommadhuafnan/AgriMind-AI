@@ -12,6 +12,7 @@ type ChatComposerProps = {
   isPartialTranscribing: boolean
   isTyping: boolean
   isChunkedLiveTyping: boolean
+  usesValseaVoice?: boolean
   voiceReplies: boolean
   placeholder: string
   textareaRef: React.RefObject<HTMLTextAreaElement | null>
@@ -29,6 +30,7 @@ export function ChatComposer({
   isPartialTranscribing,
   isTyping,
   isChunkedLiveTyping,
+  usesValseaVoice = true,
   voiceReplies,
   placeholder,
   textareaRef,
@@ -98,7 +100,11 @@ export function ChatComposer({
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3">
         <p className="text-xs text-muted-foreground">
           {isListening
-            ? "Speaking… tap the red mic when finished"
+            ? isPartialTranscribing
+              ? "Typing as you speak… tap red mic when done"
+              : usesValseaVoice
+                ? "Speak — words type here live · tap red mic when done"
+                : "Speaking… tap red mic when finished"
             : "Tap green mic to speak, or type your question"}
         </p>
         <Button

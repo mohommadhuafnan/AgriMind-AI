@@ -72,8 +72,13 @@ export default function ChatPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const inputRef = useRef(input)
   const cancelSpeakRef = useRef<(() => void) | null>(null)
   const voiceRepliesRef = useRef(voiceReplies)
+
+  useEffect(() => {
+    inputRef.current = input
+  }, [input])
 
   const { sendMessage, isLoading: isTyping } = useAiChat(language)
   const {
@@ -84,7 +89,10 @@ export default function ChatPage() {
     usesValseaVoice,
     startListening,
     stopListening,
-  } = useVoiceInput(language)
+  } = useVoiceInput(language, {
+    preferValsea: true,
+    fasterLiveUpdates: true,
+  })
 
   useEffect(() => {
     voiceRepliesRef.current = voiceReplies
@@ -195,14 +203,12 @@ export default function ChatPage() {
 
     if (isListening) {
       const { text, errorShown } = await stopListening()
-      const finalText = (text ?? input).trim()
+      const finalText = (text ?? inputRef.current).trim()
       setInput(finalText)
 
       if (!finalText && !errorShown) {
         toast.error(
-          usesValseaVoice
-            ? `No speech heard. Speak in ${getLanguageDisplayLabel(language)}, wait 2+ seconds, then tap the mic again.`
-            : "No speech heard. Speak clearly, then tap the mic again."
+          `No speech heard. Speak in ${getLanguageDisplayLabel(language)}, keep the mic on 2+ seconds, then tap the red mic.`
         )
         return
       }
@@ -255,9 +261,9 @@ export default function ChatPage() {
     isTranscribing
       ? "Finishing your speech…"
       : isPartialTranscribing
-        ? "Writing as you speak…"
+        ? "Typing as you speak…"
         : isListening
-          ? "Speak now — your words appear here…"
+          ? "Speak now — words appear here in real time…"
           : language === "en"
             ? "Ask about crops, weather, pests, or fertilizers…"
             : `Ask in ${getLanguageDisplayLabel(language)}…`
@@ -468,6 +474,7 @@ export default function ChatPage() {
             isPartialTranscribing={isPartialTranscribing}
             isTyping={isTyping}
             isChunkedLiveTyping={isChunkedLiveTyping}
+            usesValseaVoice={usesValseaVoice}
             voiceReplies={voiceReplies}
             placeholder={inputPlaceholder}
             textareaRef={textareaRef}

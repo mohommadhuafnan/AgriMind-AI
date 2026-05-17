@@ -32,6 +32,14 @@ const FIRST_PARTIAL_MS = 550
 const MAX_PARTIAL_TRANSCRIBES = 12
 const RECORDER_DELAY_MS = 450
 
+/** Optional tuning — AI Chat uses VALSEA + faster live typing */
+export type VoiceInputConfig = {
+  /** Always use VALSEA transcribe with live text in the box (recommended for chat) */
+  preferValsea?: boolean
+  /** Shorter intervals between partial transcriptions while speaking */
+  fasterLiveUpdates?: boolean
+}
+
 export type VoiceStopResult = {
   text: string | null
   errorShown: boolean
@@ -42,7 +50,17 @@ function delay(ms: number) {
 }
 
 /** Mic: words appear in the text box while speaking */
-export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
+export function useVoiceInput(
+  languagePreference: VoiceLanguagePreference,
+  config?: VoiceInputConfig
+) {
+  const forceValsea = config?.preferValsea ?? false
+  const partialIntervalMs = config?.fasterLiveUpdates ? 750 : PARTIAL_INTERVAL_MS
+  const firstPartialMs = config?.fasterLiveUpdates ? 350 : FIRST_PARTIAL_MS
+  const maxPartialTranscribes = config?.fasterLiveUpdates
+    ? 24
+    : MAX_PARTIAL_TRANSCRIBES
+  const recorderTimesliceMs = config?.fasterLiveUpdates ? 280 : 400
   const [isRecording, setIsRecording] = useState(false)
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [isPartialTranscribing, setIsPartialTranscribing] = useState(false)
@@ -74,13 +92,15 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
   }, [])
   const useChunkedLiveRef = useRef(false)
   const partialTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const liveTextRef = useRef("")
 
   const transcribeLanguage: SupportedLanguage | "auto" =
     isAutoDetectLanguage(languagePreference)
       ? AUTO_DETECT_LANGUAGE
       : languagePreference
 
-  const prefersValsea = prefersValseaVoiceTranscription(languagePreference)
+  const prefersValsea =
+    forceValsea || prefersValseaVoiceTranscription(languagePreference)
 
   const liveSttCapable =
     !prefersValsea &&
@@ -93,6 +113,7 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
     !liveSttCapable
 
   const pushLiveText = useCallback((text: string) => {
+    liveTextRef.current = text
     setLiveText(text)
     optionsRef.current.onTextChange?.(text)
   }, [])
@@ -165,21 +186,21 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
   const maybeSchedulePartialTranscribe = useCallback(() => {
     if (!useChunkedLiveRef.current) return
     const now = Date.now()
-    if (partialCountRef.current >= MAX_PARTIAL_TRANSCRIBES) return
-    if (now - recordStartedAtRef.current < FIRST_PARTIAL_MS) return
-    if (now - lastPartialAtRef.current < PARTIAL_INTERVAL_MS) return
+    if (partialCountRef.current >= maxPartialTranscribes) return
+    if (now - recordStartedAtRef.current < firstPartialMs) return
+    if (now - lastPartialAtRef.current < partialIntervalMs) return
 
     lastPartialAtRef.current = now
     partialCountRef.current += 1
     void runPartialTranscribe()
-  }, [runPartialTranscribe])
+  }, [firstPartialMs, maxPartialTranscribes, partialIntervalMs, runPartialTranscribe])
 
   const startPartialTimer = useCallback(() => {
     clearPartialTimer()
     partialTimerRef.current = setInterval(() => {
       maybeSchedulePartialTranscribe()
-    }, PARTIAL_INTERVAL_MS)
-  }, [clearPartialTimer, maybeSchedulePartialTranscribe])
+    }, partialIntervalMs)
+  }, [clearPartialTimer, maybeSchedulePartialTranscribe, partialIntervalMs])
 
   const stopRecorderAndTranscribe = useCallback((): Promise<string | null> => {
     return new Promise((resolve) => {
@@ -284,11 +305,11 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
         }
 
         mediaRecorderRef.current = recorder
-        recorder.start(400)
+        recorder.start(recorderTimesliceMs)
         setIsRecording(true)
         if (useChunkedLiveRef.current) {
           startPartialTimer()
-          window.setTimeout(() => maybeSchedulePartialTranscribe(), FIRST_PARTIAL_MS)
+          window.setTimeout(() => maybeSchedulePartialTranscribe(), firstPartialMs)
         }
         return true
       } catch {
@@ -297,8 +318,10 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
     },
     [
       clearPartialTimer,
+      firstPartialMs,
       maybeSchedulePartialTranscribe,
       pushLiveText,
+      recorderTimesliceMs,
       releaseStream,
       startPartialTimer,
       transcribeBlob,
@@ -376,7 +399,9 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
           ? "your language"
           : getLanguageDisplayLabel(languagePreference)
         toast.message(
-          `Listening with VALSEA — speak in ${langLabel}, text appears in the box`,
+          forceValsea
+            ? `Speak in ${langLabel} — your words type here as you talk`
+            : `Listening — speak in ${langLabel}, text appears in the box`,
           { duration: 4000 }
         )
       } else if (browserSttOk) {
@@ -397,6 +422,7 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
       liveSttCapable,
       needsRecorderOnListen,
       languagePreference,
+      forceValsea,
       prefersValsea,
       pushLiveText,
       realtime,
@@ -446,14 +472,17 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
         ? valseaText
         : liveSttText || valseaText || null
 
-    if (merged) {
-      pushLiveText(merged)
+    const buffered = liveTextRef.current.trim()
+    const finalText = (merged?.trim() || buffered || null) || null
+
+    if (finalText) {
+      pushLiveText(finalText)
     }
 
     useChunkedLiveRef.current = false
 
     return {
-      text: merged,
+      text: finalText,
       errorShown: lastErrorShownRef.current,
     }
   }, [
