@@ -1,4 +1,8 @@
-import { getAsianLanguage } from "@/lib/i18n/languages"
+import {
+  AUTO_DETECT_LANGUAGE,
+  getAsianLanguage,
+  isAutoDetectLanguage,
+} from "@/lib/i18n/languages"
 import type { SupportedLanguage } from "@/types"
 
 export type BrowserSpeechRecognition = {
@@ -36,29 +40,23 @@ export function speechLangForCode(code: SupportedLanguage | string): string {
   return getAsianLanguage(code)?.bcp47 ?? "en-US"
 }
 
-/** Languages where Chrome/Edge live speech-to-text works reliably */
-const LIVE_BROWSER_STT = new Set([
-  "en",
-  "hi",
-  "id",
-  "ms",
-  "th",
-  "vi",
-  "zh",
-  "ko",
-  "ja",
-])
-
-export function supportsLiveBrowserStt(code: SupportedLanguage | string): boolean {
-  return LIVE_BROWSER_STT.has(code)
+/** Use browser live speech-to-text when the Web Speech API is available. */
+export function supportsLiveBrowserStt(
+  code: SupportedLanguage | typeof AUTO_DETECT_LANGUAGE | string
+): boolean {
+  if (!isBrowserSpeechRecognitionSupported()) return false
+  if (isAutoDetectLanguage(code) || code === AUTO_DETECT_LANGUAGE) return true
+  return Boolean(getAsianLanguage(code)?.bcp47)
 }
 
-/** BCP-47 tag for Web Speech API (fallback to en-US when live STT is weak) */
-export function browserSttLangForCode(code: SupportedLanguage | string): string {
-  if (supportsLiveBrowserStt(code)) {
-    return speechLangForCode(code)
+/** BCP-47 tag for Web Speech API live typing */
+export function browserSttLangForCode(
+  code: SupportedLanguage | typeof AUTO_DETECT_LANGUAGE | string
+): string {
+  if (isAutoDetectLanguage(code) || code === AUTO_DETECT_LANGUAGE) {
+    return "en-US"
   }
-  return speechLangForCode("en")
+  return speechLangForCode(code)
 }
 
 export function joinSpokenText(base: string, addition: string): string {

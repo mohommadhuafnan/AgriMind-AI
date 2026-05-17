@@ -69,7 +69,9 @@ export default function ChatPage() {
   const {
     isListening,
     isTranscribing,
+    isPartialTranscribing,
     isLiveTypingSupported,
+    isChunkedLiveTyping,
     toggleListening,
   } = useVoiceInput(language)
 
@@ -102,6 +104,12 @@ export default function ChatPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
+
+  useEffect(() => {
+    if (!isListening || !textareaRef.current) return
+    const el = textareaRef.current
+    el.scrollTop = el.scrollHeight
+  }, [input, isListening])
 
   const handleSend = async () => {
     if (!input.trim()) return
@@ -311,15 +319,23 @@ export default function ChatPage() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={
-                isListening
-                  ? "Listening… your speech appears here live"
-                  : language === "en"
-                    ? "Ask anything about farming..."
-                    : `Ask in ${getLanguageDisplayLabel(language)} or English…`
+                isTranscribing
+                  ? "Finalizing speech…"
+                  : isPartialTranscribing
+                    ? "Updating as you speak…"
+                    : isListening
+                      ? isLiveTypingSupported
+                        ? "Speak — words appear here as you talk"
+                        : "Speak — text fills in while you talk"
+                      : language === "en"
+                        ? "Ask anything about farming..."
+                        : `Ask in ${getLanguageDisplayLabel(language)} or English…`
               }
               rows={1}
-              className={`resize-none min-h-[44px] max-h-[120px] ${
-                isListening ? "ring-2 ring-primary/40" : ""
+              className={`resize-none min-h-[44px] max-h-[120px] transition-colors ${
+                isListening
+                  ? "ring-2 ring-primary/40 bg-primary/5 border-primary"
+                  : ""
               }`}
             />
             <Button

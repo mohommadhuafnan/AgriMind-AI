@@ -122,7 +122,10 @@ export default function VoiceAssistantPage() {
   const {
     isListening,
     isTranscribing,
+    isPartialTranscribing,
+    interimText,
     isLiveTypingSupported,
+    isChunkedLiveTyping,
     startListening,
     stopListening,
   } = useVoiceInput(languageMode)
@@ -154,6 +157,17 @@ export default function VoiceAssistantPage() {
     }
     return () => clearInterval(interval)
   }, [isListening])
+
+  useEffect(() => {
+    if (!isListening || !interimText) return
+    setTextInput(interimText)
+  }, [isListening, interimText])
+
+  useEffect(() => {
+    if (!isListening || !textareaRef.current) return
+    const el = textareaRef.current
+    el.scrollTop = el.scrollHeight
+  }, [textInput, isListening])
 
   useEffect(() => {
     setMessages([
@@ -382,11 +396,15 @@ export default function VoiceAssistantPage() {
   }
 
   const statusText = isTranscribing
-    ? "Converting your voice to text…"
-    : isListening
-      ? isLiveTypingSupported
-        ? "Green = listening — words type live below. Red = stop and finish text"
-        : "Recording — speak, then tap the red button to get text"
+    ? "Finalizing your voice to text…"
+    : isPartialTranscribing
+      ? "Updating text as you speak…"
+      : isListening
+        ? isLiveTypingSupported
+          ? "Listening — your words appear in the box in real time"
+          : isChunkedLiveTyping
+            ? "Listening — text fills in the box while you talk"
+            : "Recording — tap the red mic when finished"
       : isSpeaking
         ? "AI voice playing — tap Stop voice to interrupt"
         : isProcessing
@@ -402,10 +420,10 @@ export default function VoiceAssistantPage() {
             <Badge variant="secondary" className="gap-1">
               <Sparkles className="h-3 w-3" />
               {isAutoDetectLanguage(languageMode)
-              ? "Auto language detect"
-              : isLiveTypingSupported
-                ? "Live speech → text"
-                : "VALSEA voice → text"}
+                ? "Auto detect + live text"
+                : isLiveTypingSupported
+                  ? "Live typing"
+                  : "Live voice → text"}
             </Badge>
             <Badge variant="outline" className="gap-1 border-primary/30 text-primary">
               <Globe className="h-3 w-3" />
@@ -616,20 +634,20 @@ export default function VoiceAssistantPage() {
                   onChange={(e) => setTextInput(e.target.value)}
                   placeholder={
                     isTranscribing
-                      ? "Converting speech to text…"
+                      ? "Finalizing speech to text…"
                       : isListening
-                      ? isLiveTypingSupported
-                        ? "Speak now — words appear here as you talk…"
-                        : "Recording… tap the red button when finished"
-                      : isProcessing
-                        ? "Waiting for AI answer…"
-                        : "Type your question or use the microphone above…"
+                        ? isLiveTypingSupported
+                          ? "Speak now — words appear here as you talk…"
+                          : "Speak now — text updates in this box while you talk…"
+                        : isProcessing
+                          ? "Waiting for AI answer…"
+                          : "Type your question or use the microphone above…"
                   }
                   rows={3}
                   disabled={
                     isTranscribing || (isProcessing && !isListening)
                   }
-                  className={`min-h-[88px] resize-none text-base ${
+                  className={`min-h-[88px] resize-none text-base transition-colors ${
                     isListening
                       ? "border-primary ring-2 ring-primary/30 bg-primary/5"
                       : ""
@@ -658,6 +676,14 @@ export default function VoiceAssistantPage() {
                   )}
                 </Button>
               </div>
+
+              {isListening && (
+                <p className="text-center text-xs text-primary animate-pulse">
+                  {isLiveTypingSupported
+                    ? "● Live typing — speak naturally, edit the text anytime"
+                    : "● Voice → text — keep speaking, the box updates as you go"}
+                </p>
+              )}
 
               <div>
                 <p className="mb-2 text-xs text-muted-foreground">
