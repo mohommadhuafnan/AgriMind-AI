@@ -82,7 +82,7 @@ export function DashboardPrimaryActions() {
               </div>
               <span className="flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider backdrop-blur-sm">
                 <Sparkles className="h-3 w-3" />
-                {index === 0 ? "AI Vision" : "Voice AI"}
+                {index === 0 ? "Photo check" : "Voice help"}
               </span>
             </div>
 

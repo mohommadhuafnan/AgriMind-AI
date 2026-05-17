@@ -226,7 +226,7 @@ export default function DiagnosisPage() {
         <div className="mb-1 flex items-center gap-2">
           <Badge variant="secondary" className="gap-1">
             <Sparkles className="h-3 w-3" />
-            OpenAI Vision
+            Photo check
           </Badge>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-4">

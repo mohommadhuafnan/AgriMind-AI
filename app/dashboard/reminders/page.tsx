@@ -105,7 +105,7 @@ export default function RemindersPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Reminders</h1>
           <p className="text-muted-foreground">
-            Farm tasks and schedules — stored in MongoDB.
+            Farm tasks and schedules — saved to your account.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

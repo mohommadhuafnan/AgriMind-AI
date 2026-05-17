@@ -128,7 +128,8 @@ const SI: StaticMap = {
   "dashboard.greetingMorning": "සුභ උදෑසනක්",
   "dashboard.greetingAfternoon": "සුභ දහවලක්",
   "dashboard.greetingEvening": "සුභ සන්ධ්‍යාවක්",
-  "dashboard.welcomeSubtitle": "ඔබේ AI ගොවිතැන් දළ විශ්ලේෂණය — MongoDB වෙතින් සජීව දත්ත.",
+  "dashboard.welcomeSubtitle":
+    "ඔබේ ගොවිතැන එක් තැනින් — කාලගුණය, බෝග, මිල සහ ඉක්මන් ක්‍රියාමාර්ග.",
   "dashboard.scanCrop.title": "බෝගය ස්කෑන් කරන්න",
   "dashboard.scanCrop.desc":
     "ඡායාරූපයක් ගන්න — AI රෝග හඳුනාගෙන ප්‍රතිකාර යෝජනා කරයි.",
@@ -273,7 +274,8 @@ const TA: StaticMap = {
   "dashboard.greetingMorning": "காலை வணக்கம்",
   "dashboard.greetingAfternoon": "மதிய வணக்கம்",
   "dashboard.greetingEvening": "மாலை வணக்கம்",
-  "dashboard.welcomeSubtitle": "உங்கள் AI விவசாய கண்ணோட்டம் — MongoDB இலிருந்து நேரடி தரவு.",
+  "dashboard.welcomeSubtitle":
+    "உங்கள் பண்ணை ஒரே இடத்தில் — வானிலை, பயிர்கள், விலைகள் மற்றும் விரைவு செயல்கள்.",
   "dashboard.scanCrop.title": "பயிரை ஸ்கேன் செய்",
   "dashboard.scanCrop.desc":
     "புகைப்படம் எடுங்கள் — AI நோயை கண்டறிந்து சிகிச்சை பரிந்துரைக்கிறது.",

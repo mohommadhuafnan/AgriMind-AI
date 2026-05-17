@@ -77,7 +77,8 @@ export const HI_UI: Partial<Record<UiCatalogKey, string>> = {
   "dashboard.greetingMorning": "सुप्रभात",
   "dashboard.greetingAfternoon": "नमस्कार",
   "dashboard.greetingEvening": "शुभ संध्या",
-  "dashboard.welcomeSubtitle": "आपका AI फार्म अवलोकन — MongoDB से लाइव डेटा।",
+  "dashboard.welcomeSubtitle":
+    "आपका खेत एक जगह — मौसम, फसलें, कीमतें और त्वरित कार्य।",
   "dashboard.scanCrop.title": "फसल स्कैन करें",
   "dashboard.scanCrop.desc":
     "फोटो लें — AI रोग पहचानकर उपचार सुझाता है।",

@@ -147,7 +147,8 @@ export const UI_CATALOG = {
   "dashboard.greetingMorning": "Good morning",
   "dashboard.greetingAfternoon": "Good afternoon",
   "dashboard.greetingEvening": "Good evening",
-  "dashboard.welcomeSubtitle": "Your AI-powered farm overview — live data from MongoDB.",
+  "dashboard.welcomeSubtitle":
+    "Your farm at a glance — weather, crops, prices, and quick actions in one place.",
   "dashboard.scanCrop.title": "Scan Crop",
   "dashboard.scanCrop.desc":
     "Take a photo — AI detects diseases and suggests treatments instantly.",
@@ -158,7 +159,7 @@ export const UI_CATALOG = {
   "dashboard.askAi.cta": "Open voice assistant",
   "diagnosis.title": "AI Crop Diagnosis",
   "diagnosis.subtitle":
-    "Upload a photo for GPT-4o vision analysis — disease, pests, nutrients, and treatment plans.",
+    "Upload a crop photo — get help with disease, pests, nutrients, and step-by-step treatment plans.",
   "diagnosis.viewHistory": "View History",
   "diagnosis.issueDetails": "Issue Details",
   "diagnosis.cropType": "Crop Type",

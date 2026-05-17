@@ -5,16 +5,16 @@ export function getChatWelcomeMessage(language: SupportedLanguage): string {
   const label = getLanguageDisplayLabel(language)
 
   if (language === "en") {
-    return `Hello! I'm your AgriMind AI farming assistant powered by OpenAI, with VALSEA.ai for multilingual replies.
+    return `Hello! I'm AgriMind — your farming assistant.
 
-I can help with crop diseases, treatments, fertilizers, pests, and Sri Lankan farming practices.
+Ask about crop diseases, fertilizers, pests, weather, and local farming tips. Type your question or tap the green mic to speak.
 
-How can I assist you today?`
+How can I help you today?`
   }
 
-  return `Hello! I'm AgriMind AI — your farming assistant.
+  return `Hello! I'm AgriMind — your farming assistant.
 
-Replies are translated into ${label} using VALSEA.ai. Ask about crops, diseases, weather, and local farming practices.
+Replies appear in ${label}. Ask about crops, diseases, weather, and local farming practices. Type or tap the mic to speak.
 
 How can I help you today?`
 }

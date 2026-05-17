@@ -78,7 +78,7 @@ export default function ProfilePage() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Profile</h1>
         <p className="text-muted-foreground">
-          Update your farmer profile — synced to MongoDB.
+          Update your farmer profile — saved securely to your account.
         </p>
       </div>
 
@@ -145,7 +145,7 @@ export default function ProfilePage() {
             <div className="space-y-2">
               <Label>Preferred language</Label>
               <p className="text-xs text-muted-foreground">
-                Powers AI chat, voice assistant, and VALSEA.ai translations
+                Used for AI chat, voice assistant, and on-screen language
               </p>
               <PreferredLanguageSelect
                 value={form.preferredLanguage}
