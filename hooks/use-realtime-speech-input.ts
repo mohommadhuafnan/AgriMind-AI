@@ -64,7 +64,7 @@ export function useRealtimeSpeechInput(language: SupportedLanguage) {
         let sessionFinal = ""
         let sessionInterim = ""
 
-        for (let i = event.resultIndex; i < event.results.length; i++) {
+        for (let i = 0; i < event.results.length; i++) {
           const result = event.results[i]
           const transcript = result[0]?.transcript ?? ""
           if (result.isFinal) {
@@ -74,15 +74,11 @@ export function useRealtimeSpeechInput(language: SupportedLanguage) {
           }
         }
 
-        if (sessionFinal.trim()) {
-          baseTextRef.current = joinSpokenText(
-            baseTextRef.current,
-            sessionFinal
-          )
-        }
-
-        const display = joinSpokenText(baseTextRef.current, sessionInterim)
-        applyDisplay(display)
+        const display = joinSpokenText(
+          baseTextRef.current,
+          joinSpokenText(sessionFinal, sessionInterim)
+        )
+        applyDisplay(display.trim() ? display : baseTextRef.current)
       }
 
       recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
@@ -101,6 +97,7 @@ export function useRealtimeSpeechInput(language: SupportedLanguage) {
 
       recognition.onend = () => {
         if (keepAliveRef.current && recognitionRef.current) {
+          baseTextRef.current = latestTextRef.current.trim()
           try {
             recognitionRef.current.start()
           } catch {
@@ -155,19 +152,17 @@ export function useRealtimeSpeechInput(language: SupportedLanguage) {
         prevOnResult?.(event)
         let sessionFinal = ""
         let sessionInterim = ""
-        for (let i = event.resultIndex; i < event.results.length; i++) {
+        for (let i = 0; i < event.results.length; i++) {
           const result = event.results[i]
           const transcript = result[0]?.transcript ?? ""
           if (result.isFinal) sessionFinal += transcript
           else sessionInterim += transcript
         }
-        if (sessionFinal.trim()) {
-          baseTextRef.current = joinSpokenText(
-            baseTextRef.current,
-            sessionFinal
-          )
-        }
-        applyDisplay(joinSpokenText(baseTextRef.current, sessionInterim))
+        const display = joinSpokenText(
+          baseTextRef.current,
+          joinSpokenText(sessionFinal, sessionInterim)
+        )
+        applyDisplay(display.trim() ? display : baseTextRef.current)
       }
 
       recognition.onend = finish

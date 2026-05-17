@@ -16,7 +16,7 @@ import {
   Square,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
+import { LiveVoiceTextarea } from "@/components/dashboard/voice/live-voice-textarea"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
@@ -123,7 +123,6 @@ export default function VoiceAssistantPage() {
     isListening,
     isTranscribing,
     isPartialTranscribing,
-    interimText,
     isLiveTypingSupported,
     isChunkedLiveTyping,
     startListening,
@@ -157,17 +156,6 @@ export default function VoiceAssistantPage() {
     }
     return () => clearInterval(interval)
   }, [isListening])
-
-  useEffect(() => {
-    if (!isListening || !interimText) return
-    setTextInput(interimText)
-  }, [isListening, interimText])
-
-  useEffect(() => {
-    if (!isListening || !textareaRef.current) return
-    const el = textareaRef.current
-    el.scrollTop = el.scrollHeight
-  }, [textInput, isListening])
 
   useEffect(() => {
     setMessages([
@@ -398,18 +386,16 @@ export default function VoiceAssistantPage() {
   const statusText = isTranscribing
     ? "Finalizing your voice to text…"
     : isPartialTranscribing
-      ? "Updating text as you speak…"
+      ? "Typing what you said…"
       : isListening
-        ? isLiveTypingSupported
-          ? "Listening — your words appear in the box in real time"
-          : isChunkedLiveTyping
-            ? "Listening — text fills in the box while you talk"
-            : "Recording — tap the red mic when finished"
-      : isSpeaking
-        ? "AI voice playing — tap Stop voice to interrupt"
-        : isProcessing
-          ? "AgriMind is thinking… voice starts quickly when the answer is ready"
-          : "Tap green mic to speak · tap red to convert to text · then Send"
+        ? textInput.trim()
+          ? "Keep speaking — text updates live in the box below"
+          : "Say hello (or anything) — it will type in the box as you speak"
+        : isSpeaking
+          ? "AI voice playing — tap Stop voice to interrupt"
+          : isProcessing
+            ? "AgriMind is thinking… voice starts quickly when the answer is ready"
+            : "Tap green mic · speak · your words type live in the box · tap red when done · Send"
 
   return (
     <motion.div className="-m-6 flex min-h-[calc(100dvh-4rem)] w-[calc(100%+3rem)] flex-col">
@@ -628,17 +614,17 @@ export default function VoiceAssistantPage() {
               </div>
 
               <div className="flex gap-2">
-                <Textarea
+                <LiveVoiceTextarea
                   ref={textareaRef}
                   value={textInput}
+                  isListening={isListening}
+                  animateChunked={isChunkedLiveTyping}
                   onChange={(e) => setTextInput(e.target.value)}
                   placeholder={
                     isTranscribing
                       ? "Finalizing speech to text…"
                       : isListening
-                        ? isLiveTypingSupported
-                          ? "Speak now — words appear here as you talk…"
-                          : "Speak now — text updates in this box while you talk…"
+                        ? "Say something — e.g. hello — it types here live…"
                         : isProcessing
                           ? "Waiting for AI answer…"
                           : "Type your question or use the microphone above…"
@@ -678,10 +664,10 @@ export default function VoiceAssistantPage() {
               </div>
 
               {isListening && (
-                <p className="text-center text-xs text-primary animate-pulse">
-                  {isLiveTypingSupported
-                    ? "● Live typing — speak naturally, edit the text anytime"
-                    : "● Voice → text — keep speaking, the box updates as you go"}
+                <p className="text-center text-xs font-medium text-primary animate-pulse">
+                  {textInput.trim()
+                    ? `● Typing: “${textInput.length > 48 ? `${textInput.slice(0, 48)}…` : textInput}”`
+                    : "● Listening… start speaking"}
                 </p>
               )}
 

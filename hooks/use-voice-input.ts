@@ -25,19 +25,27 @@ type VoiceInputOptions = {
 
 const MIN_RECORDING_BYTES = 1200
 const MIN_RECORDING_MS = 700
-const PARTIAL_INTERVAL_MS = 2800
-const MAX_PARTIAL_TRANSCRIBES = 6
+const PARTIAL_INTERVAL_MS = 1200
+const FIRST_PARTIAL_MS = 550
+const MAX_PARTIAL_TRANSCRIBES = 12
+const RECORDER_DELAY_MS = 450
 
 export type VoiceStopResult = {
   text: string | null
   errorShown: boolean
 }
 
-/** Mic: live typing in the text box while speaking; Valsea refines on stop when needed */
+function delay(ms: number) {
+  return new Promise((r) => setTimeout(r, ms))
+}
+
+/** Mic: words appear in the text box while speaking */
 export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
   const [isRecording, setIsRecording] = useState(false)
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [isPartialTranscribing, setIsPartialTranscribing] = useState(false)
+  const [liveText, setLiveText] = useState("")
+  const [browserSttActive, setBrowserSttActive] = useState(false)
 
   const sttLanguage: SupportedLanguage = isAutoDetectLanguage(languagePreference)
     ? "en"
@@ -57,15 +65,30 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
   const partialCountRef = useRef(0)
   const lastPartialAtRef = useRef(0)
   const partialInFlightRef = useRef(false)
+  const browserSttActiveRef = useRef(false)
+  const setBrowserStt = useCallback((active: boolean) => {
+    browserSttActiveRef.current = active
+    setBrowserSttActive(active)
+  }, [])
+  const useChunkedLiveRef = useRef(false)
+  const partialTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const transcribeLanguage: SupportedLanguage | "auto" =
     isAutoDetectLanguage(languagePreference)
       ? AUTO_DETECT_LANGUAGE
       : languagePreference
 
-  const liveSttEnabled =
+  const liveSttCapable =
     isBrowserSpeechRecognitionSupported() &&
     supportsLiveBrowserStt(languagePreference)
+
+  const needsRecorderOnListen =
+    isAutoDetectLanguage(languagePreference) || !liveSttCapable
+
+  const pushLiveText = useCallback((text: string) => {
+    setLiveText(text)
+    optionsRef.current.onTextChange?.(text)
+  }, [])
 
   const transcribeBlob = useCallback(
     async (blob: Blob, filename: string): Promise<string | null> => {
@@ -87,6 +110,13 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
   const releaseStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop())
     streamRef.current = null
+  }, [])
+
+  const clearPartialTimer = useCallback(() => {
+    if (partialTimerRef.current) {
+      clearInterval(partialTimerRef.current)
+      partialTimerRef.current = null
+    }
   }, [])
 
   const runPartialTranscribe = useCallback(async () => {
@@ -113,29 +143,36 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
         audioFilenameForMime(mimeTypeRef.current)
       )
       if (text?.trim() && mediaRecorderRef.current?.state === "recording") {
-        optionsRef.current.onTextChange?.(text.trim())
+        pushLiveText(text.trim())
       }
     } catch {
-      /* partial updates are best-effort */
+      /* best-effort live updates */
     } finally {
       partialInFlightRef.current = false
       if (mediaRecorderRef.current?.state === "recording") {
         setIsPartialTranscribing(false)
       }
     }
-  }, [transcribeBlob])
+  }, [pushLiveText, transcribeBlob])
 
   const maybeSchedulePartialTranscribe = useCallback(() => {
-    if (liveSttEnabled) return
+    if (!useChunkedLiveRef.current) return
     const now = Date.now()
     if (partialCountRef.current >= MAX_PARTIAL_TRANSCRIBES) return
+    if (now - recordStartedAtRef.current < FIRST_PARTIAL_MS) return
     if (now - lastPartialAtRef.current < PARTIAL_INTERVAL_MS) return
-    if (now - recordStartedAtRef.current < MIN_RECORDING_MS) return
 
     lastPartialAtRef.current = now
     partialCountRef.current += 1
     void runPartialTranscribe()
-  }, [liveSttEnabled, runPartialTranscribe])
+  }, [runPartialTranscribe])
+
+  const startPartialTimer = useCallback(() => {
+    clearPartialTimer()
+    partialTimerRef.current = setInterval(() => {
+      maybeSchedulePartialTranscribe()
+    }, PARTIAL_INTERVAL_MS)
+  }, [clearPartialTimer, maybeSchedulePartialTranscribe])
 
   const stopRecorderAndTranscribe = useCallback((): Promise<string | null> => {
     return new Promise((resolve) => {
@@ -160,7 +197,108 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
     })
   }, [releaseStream])
 
-  const startRecording = useCallback(async (): Promise<boolean> => {
+  const beginRecorder = useCallback(
+    (stream: MediaStream): boolean => {
+      try {
+        const mimeType = pickAudioMimeType()
+        mimeTypeRef.current = mimeType
+
+        const recorder = new MediaRecorder(
+          stream,
+          mimeType ? { mimeType } : undefined
+        )
+        chunksRef.current = []
+        partialCountRef.current = 0
+        lastPartialAtRef.current = 0
+        recordStartedAtRef.current = Date.now()
+
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            chunksRef.current.push(e.data)
+            maybeSchedulePartialTranscribe()
+          }
+        }
+
+        recorder.onstop = async () => {
+          setIsRecording(false)
+          setIsPartialTranscribing(false)
+          clearPartialTimer()
+          releaseStream()
+          mediaRecorderRef.current = null
+
+          if (skipTranscribeRef.current) {
+            skipTranscribeRef.current = false
+            resolveStopRef.current?.(null)
+            resolveStopRef.current = null
+            return
+          }
+
+          let text: string | null = null
+          const blob = new Blob(chunksRef.current, {
+            type: mimeTypeRef.current,
+          })
+          const filename = audioFilenameForMime(mimeTypeRef.current)
+          const durationMs = Date.now() - recordStartedAtRef.current
+
+          if (
+            blob.size >= MIN_RECORDING_BYTES &&
+            durationMs >= MIN_RECORDING_MS
+          ) {
+            setIsTranscribing(true)
+            try {
+              text = await transcribeBlob(blob, filename)
+              if (!text?.trim()) {
+                lastErrorShownRef.current = true
+                toast.error(
+                  "Could not understand your voice. Speak clearly and try again."
+                )
+              }
+            } catch (err) {
+              lastErrorShownRef.current = true
+              toast.error(
+                err instanceof Error ? err.message : "Transcription failed"
+              )
+            } finally {
+              setIsTranscribing(false)
+            }
+          } else if (useChunkedLiveRef.current && !browserSttActiveRef.current) {
+            lastErrorShownRef.current = true
+            toast.error(
+              "Recording too short. Hold the mic, speak for at least a second, then tap red."
+            )
+          }
+
+          if (text?.trim()) {
+            pushLiveText(text.trim())
+          }
+
+          resolveStopRef.current?.(text?.trim() ?? null)
+          resolveStopRef.current = null
+        }
+
+        mediaRecorderRef.current = recorder
+        recorder.start(400)
+        setIsRecording(true)
+        if (useChunkedLiveRef.current) {
+          startPartialTimer()
+          window.setTimeout(() => maybeSchedulePartialTranscribe(), FIRST_PARTIAL_MS)
+        }
+        return true
+      } catch {
+        return false
+      }
+    },
+    [
+      clearPartialTimer,
+      maybeSchedulePartialTranscribe,
+      pushLiveText,
+      releaseStream,
+      startPartialTimer,
+      transcribeBlob,
+    ]
+  )
+
+  const acquireMic = useCallback(async (): Promise<MediaStream | null> => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -170,178 +308,143 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
         },
       })
       streamRef.current = stream
-
-      const mimeType = pickAudioMimeType()
-      mimeTypeRef.current = mimeType
-
-      const recorder = new MediaRecorder(
-        stream,
-        mimeType ? { mimeType } : undefined
-      )
-      chunksRef.current = []
-      partialCountRef.current = 0
-      lastPartialAtRef.current = 0
-      recordStartedAtRef.current = Date.now()
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunksRef.current.push(e.data)
-          maybeSchedulePartialTranscribe()
-        }
-      }
-
-      recorder.onstop = async () => {
-        setIsRecording(false)
-        setIsPartialTranscribing(false)
-        releaseStream()
-        mediaRecorderRef.current = null
-
-        if (skipTranscribeRef.current) {
-          skipTranscribeRef.current = false
-          resolveStopRef.current?.(null)
-          resolveStopRef.current = null
-          return
-        }
-
-        let text: string | null = null
-        const blob = new Blob(chunksRef.current, {
-          type: mimeTypeRef.current,
-        })
-        const filename = audioFilenameForMime(mimeTypeRef.current)
-        const durationMs = Date.now() - recordStartedAtRef.current
-
-        if (
-          blob.size >= MIN_RECORDING_BYTES &&
-          durationMs >= MIN_RECORDING_MS
-        ) {
-          setIsTranscribing(true)
-          try {
-            text = await transcribeBlob(blob, filename)
-            if (!text?.trim()) {
-              lastErrorShownRef.current = true
-              toast.error(
-                "Could not understand your voice. Speak clearly and try again."
-              )
-            }
-          } catch (err) {
-            lastErrorShownRef.current = true
-            toast.error(
-              err instanceof Error ? err.message : "Transcription failed"
-            )
-          } finally {
-            setIsTranscribing(false)
-          }
-        } else if (!liveSttEnabled) {
-          lastErrorShownRef.current = true
-          toast.error(
-            "Recording too short. Hold the mic, speak for at least a second, then tap red."
-          )
-        }
-
-        if (text?.trim()) {
-          optionsRef.current.onTextChange?.(text.trim())
-        }
-
-        resolveStopRef.current?.(text?.trim() ?? null)
-        resolveStopRef.current = null
-      }
-
-      mediaRecorderRef.current = recorder
-      recorder.start(400)
-      setIsRecording(true)
-      return true
+      return stream
     } catch {
       lastErrorShownRef.current = true
       toast.error("Microphone access denied. Allow mic in browser settings.")
-      return false
+      return null
     }
-  }, [
-    liveSttEnabled,
-    maybeSchedulePartialTranscribe,
-    releaseStream,
-    transcribeBlob,
-  ])
+  }, [])
 
   const startListening = useCallback(
     async (options?: VoiceInputOptions): Promise<boolean> => {
       lastErrorShownRef.current = false
+      setBrowserStt(false)
+      useChunkedLiveRef.current = false
       optionsRef.current = options ?? {}
       const initial = options?.initialText?.trim() ?? ""
-      options?.onTextChange?.(initial)
+      pushLiveText(initial)
 
-      const recordingOk = await startRecording()
-      if (!recordingOk) return false
+      const stream = await acquireMic()
+      if (!stream) return false
 
-      if (liveSttEnabled) {
-        const sttOk = await realtime.start({
+      let browserSttOk = false
+      if (liveSttCapable) {
+        browserSttOk = await realtime.start({
           initialText: initial,
           onTextChange: (text) => {
-            optionsRef.current.onTextChange?.(text)
+            pushLiveText(text)
           },
           micAlreadyGranted: true,
         })
-        if (sttOk) {
-          toast.message("Listening… words appear in the box as you speak", {
-            duration: 3000,
+        setBrowserStt(browserSttOk)
+      }
+
+      useChunkedLiveRef.current = !browserSttOk
+
+      if (browserSttOk && !needsRecorderOnListen) {
+        toast.message("Listening… speak and watch words type in the box", {
+          duration: 3500,
+        })
+        return true
+      }
+
+      if (browserSttOk && needsRecorderOnListen) {
+        await delay(RECORDER_DELAY_MS)
+      }
+
+      if (!beginRecorder(stream)) {
+        releaseStream()
+        if (browserSttOk) {
+          toast.message("Listening… speak and watch words type in the box", {
+            duration: 3500,
           })
-        } else {
-          toast.message(
-            "Recording — text updates every few seconds while you speak",
-            { duration: 4000 }
-          )
+          return true
         }
+        return false
+      }
+
+      if (browserSttOk) {
+        toast.message("Listening… words type live as you speak", {
+          duration: 3500,
+        })
       } else {
-        toast.message(
-          "Recording — text updates in the box while you speak",
-          { duration: 4000 }
-        )
+        toast.message("Listening… your speech types into the box", {
+          duration: 3500,
+        })
       }
 
       return true
     },
-    [liveSttEnabled, realtime, startRecording]
+    [
+      acquireMic,
+      beginRecorder,
+      liveSttCapable,
+      needsRecorderOnListen,
+      pushLiveText,
+      realtime,
+      releaseStream,
+    ]
   )
 
   const stopListening = useCallback(async (): Promise<VoiceStopResult> => {
-    let liveText = ""
+    clearPartialTimer()
+    let liveSttText = ""
 
     if (realtime.isListening) {
-      liveText = (await realtime.stop()).trim()
-      if (liveText) {
-        optionsRef.current.onTextChange?.(liveText)
+      liveSttText = (await realtime.stop()).trim()
+      if (liveSttText) {
+        pushLiveText(liveSttText)
       }
     }
+    setBrowserStt(false)
+
+    const hasRecorder =
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state !== "inactive"
 
     let valseaText: string | null = null
     const shouldUseValsea =
       isAutoDetectLanguage(languagePreference) ||
-      liveText.length < 2 ||
-      !liveSttEnabled
+      liveSttText.length < 2 ||
+      !liveSttCapable ||
+      hasRecorder
 
-    if (liveText.length >= 2 && !shouldUseValsea) {
+    if (liveSttText.length >= 2 && !shouldUseValsea) {
       skipTranscribeRef.current = true
-      await stopRecorderAndTranscribe()
-    } else {
+      if (hasRecorder) {
+        await stopRecorderAndTranscribe()
+      } else {
+        releaseStream()
+      }
+    } else if (hasRecorder) {
       valseaText = (await stopRecorderAndTranscribe())?.trim() ?? null
+    } else {
+      releaseStream()
     }
 
     const merged =
       shouldUseValsea && valseaText
         ? valseaText
-        : liveText || valseaText || null
+        : liveSttText || valseaText || null
 
     if (merged) {
-      optionsRef.current.onTextChange?.(merged)
+      pushLiveText(merged)
     }
+
+    useChunkedLiveRef.current = false
 
     return {
       text: merged,
       errorShown: lastErrorShownRef.current,
     }
   }, [
+    clearPartialTimer,
     languagePreference,
-    liveSttEnabled,
+    liveSttCapable,
+    pushLiveText,
     realtime,
+    releaseStream,
     stopRecorderAndTranscribe,
   ])
 
@@ -356,13 +459,19 @@ export function useVoiceInput(languagePreference: VoiceLanguagePreference) {
     [isRecording, realtime.isListening, startListening, stopListening]
   )
 
+  const isListening = isRecording || realtime.isListening
+  const isChunkedLiveTyping =
+    isListening && isRecording && !browserSttActive
+
   return {
-    isListening: isRecording || realtime.isListening,
+    isListening,
     isTranscribing,
     isPartialTranscribing,
-    interimText: realtime.interimText,
-    isLiveTypingSupported: liveSttEnabled,
-    isChunkedLiveTyping: !liveSttEnabled && isRecording,
+    liveText,
+    interimText: realtime.interimText || liveText,
+    isLiveTypingSupported: liveSttCapable,
+    isBrowserSttActive: browserSttActive,
+    isChunkedLiveTyping,
     startListening,
     stopListening,
     toggleListening,
