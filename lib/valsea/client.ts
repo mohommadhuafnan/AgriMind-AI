@@ -27,8 +27,10 @@ function parseTranslateError(data: unknown, status: number): string {
 }
 
 function authHeaders(contentType?: string): HeadersInit {
+  const key = getApiKey()
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${getApiKey()}`,
+    Authorization: `Bearer ${key}`,
+    "X-API-Key": key,
   }
   if (contentType) {
     headers["Content-Type"] = contentType
@@ -92,9 +94,10 @@ async function transcribeOnce(
   formData.append("enable_tags", String(options.enableTags ?? false))
   formData.append("response_format", "verbose_json")
 
+  const key = getApiKey()
   const res = await fetch(`${BASE_URL}/v1/audio/transcriptions`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${getApiKey()}` },
+    headers: { Authorization: `Bearer ${key}`, "X-API-Key": key },
     body: formData,
   })
 

@@ -51,7 +51,7 @@ async function fetchBatchTranslations(
   texts: string[],
   target: SupportedLanguage
 ): Promise<string[]> {
-  const CHUNK = 35
+  const CHUNK = 10
   const out: string[] = []
 
   for (let i = 0; i < texts.length; i += CHUNK) {
@@ -66,7 +66,7 @@ async function fetchBatchTranslations(
       const msg = json.error ?? "Translation failed"
       if (res.status === 503) {
         throw new Error(
-          `${msg} Restart \`npm run dev\` after updating .env.local and Vercel env.`
+          `${msg} Restart \`npm run dev\` after updating .env.local, or redeploy Vercel after adding the env var.`
         )
       }
       throw new Error(msg)
@@ -129,7 +129,8 @@ export function LanguageProvider({
     } catch (err) {
       if (!staticMap) {
         toast.error(
-          err instanceof Error ? err.message : "Valsea translation failed"
+          err instanceof Error ? err.message : "Valsea translation failed",
+          { id: "valsea-translate-error" }
         )
         setMap({})
       }
@@ -191,7 +192,7 @@ export function LanguageProvider({
           err instanceof Error
             ? err.message
             : "Could not translate page content."
-        toast.error(msg)
+        toast.error(msg, { id: "valsea-translate-error" })
         return texts
       }
     },
