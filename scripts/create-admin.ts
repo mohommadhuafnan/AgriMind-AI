@@ -5,13 +5,15 @@
  *   1. Create user in Firebase Auth (email/password)
  *   2. Sign up once via /login OR create in Firebase Console
  *   3. Set MONGODB_URI in .env.local
- *   4. Run: npx tsx scripts/create-admin.ts <firebase-uid> <email> <displayName>
+ *   4. Run: npx tsx --env-file=.env.local scripts/create-admin.ts <firebase-uid> <email> [displayName]
  *
  * Example:
- *   npx tsx scripts/create-admin.ts abc123 admin@agrimind.ai "Admin User"
+ *   npx tsx --env-file=.env.local scripts/create-admin.ts abc123 admin@agrimind.ai "Admin User"
  */
 
+import mongoose from "mongoose"
 import { connectDB } from "../lib/mongodb"
+import User from "../models/User"
 
 async function main() {
   const [, , uid, email, displayName] = process.argv
@@ -25,21 +27,11 @@ async function main() {
 
   await connectDB()
 
-  const UserSchema = new mongoose.Schema({
-    firebaseUid: String,
-    email: String,
-    displayName: String,
-    role: { type: String, default: "farmer" },
-    isActive: { type: Boolean, default: true },
-  })
-
-  const User = mongoose.models.User ?? mongoose.model("User", UserSchema)
-
   const user = await User.findOneAndUpdate(
     { firebaseUid: uid },
     {
       $set: {
-        email,
+        email: email.toLowerCase(),
         displayName: displayName ?? "Admin",
         role: "admin",
         isActive: true,
@@ -49,7 +41,7 @@ async function main() {
     { upsert: true, new: true }
   )
 
-  console.log("Admin user ready:", user.email, "role:", user.role)
+  console.log("Admin user ready:", user.email, "role:", user.role, "uid:", user.firebaseUid)
   await mongoose.disconnect()
 }
 

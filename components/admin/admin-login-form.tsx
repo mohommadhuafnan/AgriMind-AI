@@ -15,13 +15,17 @@ import {
   signOutFirebase,
 } from "@/services/auth.service"
 
+const DEFAULT_ADMIN_EMAIL = "admin@gamil.com"
+/** Firebase requires 6+ characters — "admin" alone is not allowed */
+const DEFAULT_ADMIN_PASSWORD = "admin1"
+
 export function AdminLoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get("from") ?? "/admin"
 
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [email, setEmail] = useState(DEFAULT_ADMIN_EMAIL)
+  const [password, setPassword] = useState(DEFAULT_ADMIN_PASSWORD)
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -80,7 +84,7 @@ export function AdminLoginForm() {
               <Input
                 id="admin-email"
                 type="email"
-                placeholder="admin@agrimind.ai"
+                placeholder={DEFAULT_ADMIN_EMAIL}
                 className="pl-10"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

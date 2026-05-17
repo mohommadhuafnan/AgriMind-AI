@@ -36,7 +36,7 @@ export function AdminHeader() {
             {admin?.displayName ?? "Admin"}
           </p>
           <p className="text-xs text-muted-foreground">
-            {admin?.email ?? "admin@agrimind.ai"}
+            {admin?.email ?? "admin@gamil.com"}
           </p>
         </div>
       </div>
