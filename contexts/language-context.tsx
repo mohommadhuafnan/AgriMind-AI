@@ -6,9 +6,9 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react"
-import { toast } from "sonner"
 import { fetchLiveTranslations } from "@/lib/i18n/client-translate-queue"
 import { resolveStaticTexts } from "@/lib/i18n/resolve-static"
 import {
@@ -26,6 +26,7 @@ import {
   mergeTranslations,
   type TranslationMap,
 } from "@/lib/i18n/static-ui"
+import { SHOW_LIVE_TRANSLATE_ERROR_TOAST } from "@/lib/i18n/translation-policy"
 import { UI_USES_STATIC_TRANSLATIONS } from "@/lib/i18n/translation-policy"
 import {
   getAsianLanguage,
@@ -34,14 +35,15 @@ import {
 } from "@/lib/i18n/languages"
 import type { SupportedLanguage } from "@/types"
 import { UI_CATALOG, type UiCatalogKey } from "@/lib/i18n/ui-catalog"
+import { toast } from "sonner"
 
 interface LanguageContextValue {
   language: SupportedLanguage
   setLanguage: (lang: SupportedLanguage) => Promise<void>
   t: (key: UiCatalogKey) => string
-  /** Static + cache only — for landing page DOM (no API). */
+  /** Static + cache only — never calls Valsea. */
   translateTexts: (texts: string[]) => Promise<string[]>
-  /** Rate-limited API — diagnosis reports only. */
+  /** OpenAI + cache, rate-limited — diagnosis only. */
   translateTextsLive: (texts: string[]) => Promise<string[]>
   isTranslating: boolean
   isPageTranslating: boolean
@@ -68,9 +70,9 @@ export function LanguageProvider({
     initialLanguage ?? "en"
   )
   const [map, setMap] = useState<TranslationMap>({})
-  const [isTranslating] = useState(false)
   const [isPageTranslating, setPageTranslating] = useState(false)
   const languageGroups = useMemo(() => getLanguagesByRegion(), [])
+  const languageReadyFired = useRef<string>("")
 
   const loadCatalog = useCallback(async (lang: SupportedLanguage) => {
     if (lang === "en") {
@@ -88,18 +90,13 @@ export function LanguageProvider({
       }
     }
 
-    // No bulk Valsea/OpenAI for UI catalog — show English for any missing keys
     setCachedTranslations(lang, merged as Record<string, string>)
   }, [])
 
   useEffect(() => {
     const stored = getStoredLanguage()
     setLanguageState(stored)
-    void loadCatalog(stored).then(() => {
-      if (stored !== "en" && typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("agrimind:language-ready"))
-      }
-    })
+    void loadCatalog(stored)
   }, [loadCatalog])
 
   useEffect(() => {
@@ -113,12 +110,13 @@ export function LanguageProvider({
       setLanguageState(lang)
       setStoredLanguage(lang)
       await loadCatalog(lang)
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("agrimind:language-ready"))
-      }
-      if (lang !== "en") {
-        const info = getAsianLanguage(lang) as AsianLanguage
-        toast.success(`${info.nativeLabel}`, { duration: 1500 })
+
+      const readyKey = lang
+      if (languageReadyFired.current !== readyKey) {
+        languageReadyFired.current = readyKey
+        if (typeof window !== "undefined" && lang !== "en") {
+          window.dispatchEvent(new CustomEvent("agrimind:language-ready"))
+        }
       }
     },
     [loadCatalog]
@@ -139,18 +137,12 @@ export function LanguageProvider({
       const pageCache = getPageTranslationCache(language) ?? {}
       const { resolved, missingIndices } = resolveStaticTexts(language, texts)
 
-      const stillMissing: number[] = []
       for (const i of missingIndices) {
         const src = texts[i]
         const cached = pageCache[src]
-        if (cached) {
-          resolved[i] = cached
-        } else {
-          stillMissing.push(i)
-        }
+        if (cached) resolved[i] = cached
       }
 
-      // Save newly resolved static strings into page cache
       if (missingIndices.length > 0) {
         const updated = { ...pageCache }
         missingIndices.forEach((i) => {
@@ -173,16 +165,20 @@ export function LanguageProvider({
 
       const toTranslate = missingIndices.map((i) => texts[i])
       try {
-        const live = await fetchLiveTranslations(toTranslate, language)
+        const live = await fetchLiveTranslations(toTranslate, language, {
+          softFail: true,
+        })
         missingIndices.forEach((origIndex, j) => {
           resolved[origIndex] = live[j] ?? texts[origIndex]
         })
         return resolved
       } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : "Live translation unavailable",
-          { id: "valsea-translate-error" }
-        )
+        if (SHOW_LIVE_TRANSLATE_ERROR_TOAST) {
+          toast.error(
+            err instanceof Error ? err.message : "Translation unavailable",
+            { id: "valsea-translate-error" }
+          )
+        }
         return resolved
       }
     },
@@ -196,7 +192,7 @@ export function LanguageProvider({
       t,
       translateTexts,
       translateTextsLive,
-      isTranslating: isTranslating || isPageTranslating,
+      isTranslating: isPageTranslating,
       isPageTranslating,
       setPageTranslating,
       languageGroups,
@@ -207,16 +203,13 @@ export function LanguageProvider({
       t,
       translateTexts,
       translateTextsLive,
-      isTranslating,
       isPageTranslating,
       languageGroups,
     ]
   )
 
   return (
-    <LanguageContext.Provider value={value}>
-      {children}
-    </LanguageContext.Provider>
+    <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>
   )
 }
 

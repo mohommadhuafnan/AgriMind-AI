@@ -5,6 +5,50 @@ import { useLanguage } from "@/contexts/language-context"
 import type { CropDiagnosisResult } from "@/types/ai"
 import type { SupportedLanguage } from "@/types"
 
+const CACHE_PREFIX = "agrimind-diagnosis-i18n"
+
+function cacheKey(
+  disease: string,
+  lang: SupportedLanguage,
+  sourceLang: SupportedLanguage
+): string {
+  return `${CACHE_PREFIX}:${lang}:${sourceLang}:${disease.slice(0, 48)}`
+}
+
+function readDiagnosisCache(
+  source: CropDiagnosisResult,
+  lang: SupportedLanguage,
+  sourceLang: SupportedLanguage
+): CropDiagnosisResult | null {
+  if (typeof window === "undefined") return null
+  try {
+    const raw = sessionStorage.getItem(
+      cacheKey(source.disease, lang, sourceLang)
+    )
+    if (!raw) return null
+    return JSON.parse(raw) as CropDiagnosisResult
+  } catch {
+    return null
+  }
+}
+
+function writeDiagnosisCache(
+  source: CropDiagnosisResult,
+  lang: SupportedLanguage,
+  sourceLang: SupportedLanguage,
+  translated: CropDiagnosisResult
+) {
+  if (typeof window === "undefined") return
+  try {
+    sessionStorage.setItem(
+      cacheKey(source.disease, lang, sourceLang),
+      JSON.stringify(translated)
+    )
+  } catch {
+    /* ignore */
+  }
+}
+
 function collectTexts(d: CropDiagnosisResult): string[] {
   const texts: string[] = [
     d.disease,
@@ -71,7 +115,7 @@ function applyTranslations(
   }
 }
 
-/** Translate diagnosis report via Valsea when UI language changes */
+/** Translate diagnosis once per report + language (OpenAI, cached). */
 export function useDiagnosisTranslation(
   source: CropDiagnosisResult | null,
   sourceLanguage: SupportedLanguage
@@ -91,8 +135,14 @@ export function useDiagnosisTranslation(
       return
     }
 
-    if (language === sourceLanguage) {
+    if (language === sourceLanguage || language === "en") {
       setDisplay(source)
+      return
+    }
+
+    const cached = readDiagnosisCache(source, language, sourceLanguage)
+    if (cached) {
+      setDisplay(cached)
       return
     }
 
@@ -104,7 +154,9 @@ export function useDiagnosisTranslation(
         const originals = collectTexts(source)
         const translated = await translateTextsLive(originals)
         if (currentRun !== runId.current) return
-        setDisplay(applyTranslations(source, originals, translated))
+        const next = applyTranslations(source, originals, translated)
+        writeDiagnosisCache(source, language, sourceLanguage, next)
+        setDisplay(next)
       } catch {
         if (currentRun === runId.current) setDisplay(source)
       } finally {

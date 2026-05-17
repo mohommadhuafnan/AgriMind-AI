@@ -1,72 +1,19 @@
 import { NextResponse } from "next/server"
-import { isValseaConfigured, requireValseaApiKey } from "@/lib/valsea/config"
-import {
-  getCachedServerTranslation,
-  setCachedServerTranslation,
-} from "@/lib/i18n/server-translation-cache"
-import { isValseaTranslateSupported } from "@/lib/valsea/translate-languages"
 import { LIVE_TRANSLATE_MAX_STRINGS } from "@/lib/i18n/translation-policy"
-import { translateTextsWithOpenAI } from "@/services/openai-translate.service"
-import { translateText } from "@/services/valsea.service"
 import type { SupportedLanguage } from "@/types"
 
 export const maxDuration = 60
 
-const MAX_CHARS = 4000
-const CONCURRENCY = 4
-
-function isCriticalValseaError(err: unknown): boolean {
-  if (!(err instanceof Error)) return false
-  const m = err.message.toLowerCase()
-  return (
-    m.includes("valsea_api_key") ||
-    m.includes("api key") ||
-    m.includes("unauthorized") ||
-    m.includes("401") ||
-    m.includes("402") ||
-    m.includes("credits") ||
-    m.includes("not set") ||
-    m.includes("invalid or expired")
-  )
-}
-
-async function translateOne(
-  text: string,
-  target: SupportedLanguage,
-  source: SupportedLanguage | "auto"
-): Promise<{ text: string; changed: boolean; error?: string }> {
-  const trimmed = text?.trim() ?? ""
-  if (!trimmed) return { text: text ?? "", changed: false }
-  if (trimmed.length > MAX_CHARS) return { text: trimmed, changed: false }
-
-  const srcKey = source ?? "en"
-  const cached = getCachedServerTranslation(target, srcKey, trimmed)
-  if (cached) {
-    return { text: cached, changed: cached !== trimmed }
-  }
-
-  try {
-    const result = await translateText(trimmed, target, source)
-    const out = result.translatedText?.trim()
-    if (!out) {
-      return { text: trimmed, changed: false, error: "Empty translation response" }
-    }
-    setCachedServerTranslation(target, srcKey, trimmed, out)
-    return { text: out, changed: out !== trimmed }
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Translation failed"
-    if (isCriticalValseaError(err)) throw err
-    return { text: trimmed, changed: false, error: message }
-  }
-}
-
+/**
+ * Legacy endpoint — UI mode returns English unchanged.
+ * Live mode redirects clients to POST /api/translate/live (OpenAI).
+ */
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { texts, target, source, mode } = body as {
+    const { texts, target, mode } = body as {
       texts?: string[]
       target?: SupportedLanguage
-      source?: SupportedLanguage | "auto"
       mode?: "live" | "ui"
     }
 
@@ -84,15 +31,7 @@ export async function POST(request: Request) {
       )
     }
 
-    if (target === "en") {
-      return NextResponse.json({
-        success: true,
-        data: { translations: texts },
-      })
-    }
-
-    // UI / landing uses built-in strings in the app — never burn API quota here
-    if (mode !== "live") {
+    if (target === "en" || mode !== "live") {
       return NextResponse.json({
         success: true,
         data: { translations: texts },
@@ -103,83 +42,24 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: `Too many strings at once (max ${LIVE_TRANSLATE_MAX_STRINGS}). Open the report again in a moment.`,
+          error: `Use /api/translate/live (max ${LIVE_TRANSLATE_MAX_STRINGS} strings).`,
         },
         { status: 400 }
       )
     }
 
-    const slice = texts
-    const src = source ?? "en"
-    const remainder: string[] = []
-
-    if (!isValseaTranslateSupported(target)) {
-      try {
-        const translations = await translateTextsWithOpenAI(slice, target, src)
-        return NextResponse.json({
-          success: true,
-          data: { translations: [...translations, ...remainder] },
-        })
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Translation failed for this language."
-        return NextResponse.json({ success: false, error: message }, { status: 500 })
-      }
-    }
-
-    if (!isValseaConfigured()) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "VALSEA_API_KEY is not set on the server. Add it to Vercel env and redeploy.",
-        },
-        { status: 503 }
-      )
-    }
-
-    requireValseaApiKey()
-
-    const translations: string[] = new Array(slice.length)
-    let failedCount = 0
-    let lastError: string | undefined
-
-    for (let i = 0; i < slice.length; i += CONCURRENCY) {
-      const batch = slice.slice(i, i + CONCURRENCY)
-      const results = await Promise.all(
-        batch.map((text) => translateOne(text, target, src))
-      )
-      results.forEach((result, batchIndex) => {
-        const globalIndex = i + batchIndex
-        translations[globalIndex] = result.text
-        if (!result.changed) {
-          failedCount++
-          if (result.error) lastError = result.error
-        }
-      })
-    }
-
-    if (failedCount === slice.length && slice.length > 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: lastError ?? "Translation failed. Try again in a minute.",
-        },
-        { status: 502 }
-      )
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: { translations: [...translations, ...remainder] },
-    })
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Use POST /api/translate/live for dynamic translation.",
+      },
+      { status: 410 }
+    )
   } catch (error) {
     console.error("[valsea/translate-batch]", error)
-    const message =
-      error instanceof Error ? error.message : "Batch translation failed"
-    const status = message.toLowerCase().includes("not set") ? 503 : 500
-    return NextResponse.json({ success: false, error: message }, { status })
+    return NextResponse.json(
+      { success: false, error: "Batch translation failed" },
+      { status: 500 }
+    )
   }
 }

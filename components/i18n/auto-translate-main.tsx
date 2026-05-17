@@ -21,7 +21,6 @@ export function AutoTranslateMain({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const rootRef = useRef<HTMLDivElement>(null)
   const runId = useRef(0)
-  const applyingRef = useRef(false)
   const cacheRef = useRef<Record<string, Record<string, string>>>({})
   const translatedOnceRef = useRef<string>("")
 
@@ -59,10 +58,10 @@ export function AutoTranslateMain({ children }: { children: React.ReactNode }) {
       const missing = sources.filter((s) => !langCache[s])
 
       if (missing.length > 0) {
-        const apiResults = await translateTexts(missing)
+        const staticResults = await translateTexts(missing)
         if (currentRun !== runId.current) return
 
-        const resolved = resolveTranslations(language, missing, apiResults)
+        const resolved = resolveTranslations(language, missing, staticResults)
         resolved.forEach((value, key) => {
           langCache[key] = value
         })
@@ -72,23 +71,18 @@ export function AutoTranslateMain({ children }: { children: React.ReactNode }) {
 
       if (currentRun !== runId.current) return
 
-      applyingRef.current = true
-      try {
-        for (const { node, source } of textTargets) {
-          const translated = langCache[source]
-          if (translated && translated !== source) {
-            applyTextTranslation(node, translated)
-          }
+      for (const { node, source } of textTargets) {
+        const translated = langCache[source]
+        if (translated && translated !== source) {
+          applyTextTranslation(node, translated)
         }
+      }
 
-        for (const { el, source } of placeholderTargets) {
-          const translated = langCache[source]
-          if (translated && translated !== source) {
-            el.setAttribute("placeholder", translated)
-          }
+      for (const { el, source } of placeholderTargets) {
+        const translated = langCache[source]
+        if (translated && translated !== source) {
+          el.setAttribute("placeholder", translated)
         }
-      } finally {
-        applyingRef.current = false
       }
 
       translatedOnceRef.current = runKey
@@ -109,23 +103,12 @@ export function AutoTranslateMain({ children }: { children: React.ReactNode }) {
       return
     }
 
-    const initial = window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
       void runTranslation()
-    }, 300)
+    }, 350)
 
-    return () => {
-      window.clearTimeout(initial)
-    }
+    return () => window.clearTimeout(timer)
   }, [language, pathname, runTranslation])
-
-  useEffect(() => {
-    const onLanguageReady = () => {
-      if (language !== "en") void runTranslation()
-    }
-    window.addEventListener("agrimind:language-ready", onLanguageReady)
-    return () =>
-      window.removeEventListener("agrimind:language-ready", onLanguageReady)
-  }, [language, runTranslation])
 
   return (
     <div ref={rootRef} className="min-h-0" data-translate-root>

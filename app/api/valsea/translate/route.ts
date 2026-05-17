@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server"
-import { isValseaConfigured, requireValseaApiKey } from "@/lib/valsea/config"
-import { isValseaTranslateSupported } from "@/lib/valsea/translate-languages"
 import { translateText } from "@/services/valsea.service"
 import type { SupportedLanguage } from "@/types"
 
+/** Single-string translation — OpenAI (not Valsea). */
 export async function POST(request: Request) {
   try {
     const body = await request.json()
@@ -27,20 +26,6 @@ export async function POST(request: Request) {
       )
     }
 
-    if (isValseaTranslateSupported(target)) {
-      if (!isValseaConfigured()) {
-        return NextResponse.json(
-          {
-            success: false,
-            error:
-              "VALSEA_API_KEY is not set. Add it to .env.local and restart the server.",
-          },
-          { status: 503 }
-        )
-      }
-      requireValseaApiKey()
-    }
-
     const result = await translateText(text, target, source ?? "auto")
 
     return NextResponse.json({
@@ -49,13 +34,13 @@ export async function POST(request: Request) {
         translatedText: result.translatedText,
         sourceLanguage: result.sourceLanguage,
         targetLanguage: result.targetLanguage,
+        provider: "openai",
       },
     })
   } catch (error) {
     console.error("[valsea/translate]", error)
     const message =
       error instanceof Error ? error.message : "Translation failed"
-    const status = message.toLowerCase().includes("not set") ? 503 : 500
-    return NextResponse.json({ success: false, error: message }, { status })
+    return NextResponse.json({ success: false, error: message }, { status: 500 })
   }
 }

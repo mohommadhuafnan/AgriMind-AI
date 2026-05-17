@@ -1,15 +1,10 @@
 import {
   valseaTranscribe,
-  valseaTranslate,
   type TranscribeResult,
   type TranslateResult,
 } from "@/lib/valsea/client"
 import { toValseaLanguageName } from "@/lib/i18n/languages"
-import {
-  isValseaTranslateSupported,
-  toValseaTranslateSource,
-  toValseaTranslateTarget,
-} from "@/lib/valsea/translate-languages"
+import { toValseaTranslateSource } from "@/lib/valsea/translate-languages"
 import { translateTextWithOpenAI } from "@/services/openai-translate.service"
 import { getFarmingAssistantReply } from "@/services/ai.service"
 import type { SupportedLanguage } from "@/types"
@@ -18,6 +13,7 @@ export function toValseaLanguage(code: SupportedLanguage | string): string {
   return toValseaLanguageName(code)
 }
 
+/** Voice audio → text (uses Valsea credits). */
 export async function transcribeAudio(
   file: Blob,
   language: SupportedLanguage | "auto",
@@ -31,6 +27,9 @@ export async function transcribeAudio(
   })
 }
 
+/**
+ * Text translation — OpenAI by default so Valsea quota stays for voice.
+ */
 export async function translateText(
   text: string,
   target: SupportedLanguage,
@@ -44,29 +43,19 @@ export async function translateText(
     }
   }
 
-  const valseaTarget = toValseaTranslateTarget(target)
-  if (valseaTarget) {
-    return valseaTranslate({
-      text,
-      target: valseaTarget,
-      source: toValseaTranslateSource(source ?? "auto"),
-    })
-  }
-
   const translatedText = await translateTextWithOpenAI(
     text,
     target,
     source ?? "en"
   )
-  const lang = toValseaLanguageName(target)
   return {
     translatedText,
     sourceLanguage: toValseaTranslateSource(source ?? "en"),
-    targetLanguage: lang,
+    targetLanguage: toValseaLanguageName(target),
   }
 }
 
-/** Voice/text assist — OpenAI + optional Valsea translation polish */
+/** Voice/text assist — OpenAI chat + OpenAI translation (no Valsea translate). */
 export async function getMultilingualFarmingReply(
   userMessage: string,
   language: SupportedLanguage,
