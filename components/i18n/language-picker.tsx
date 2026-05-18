@@ -20,12 +20,15 @@ type LanguagePickerProps = {
   variant?: "ghost" | "outline"
   size?: "sm" | "default"
   className?: string
+  /** Applied to the dropdown panel (e.g. z-[110] inside mobile nav overlays). */
+  contentClassName?: string
 }
 
 export function LanguagePicker({
   variant = "ghost",
   size = "sm",
   className,
+  contentClassName,
 }: LanguagePickerProps) {
   const { language, setLanguage, isTranslating, languageGroups } = useLanguage()
 
@@ -51,7 +54,7 @@ export function LanguagePicker({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-56 p-0"
+        className={cn("w-56 p-0", contentClassName)}
         data-no-translate
       >
         <ScrollArea className="h-[min(70vh,420px)]">

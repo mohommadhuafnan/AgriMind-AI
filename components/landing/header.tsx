@@ -85,7 +85,7 @@ export function Header() {
                     data-no-translate
                   >
                     <ThemeToggleRow onToggle={() => setIsMobileMenuOpen(false)} />
-                    <LanguagePicker />
+                    <LanguagePicker contentClassName="z-[110]" />
                     <Button variant="ghost" className="w-full justify-start" asChild>
                       <Link href="/login">Sign In</Link>
                     </Button>
