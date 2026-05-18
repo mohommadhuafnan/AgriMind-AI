@@ -56,32 +56,32 @@ export function Header() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="fixed inset-0 z-[100] bg-black/40 md:hidden"
+                className="fixed inset-0 z-[100] bg-black/25 backdrop-blur-[2px] md:hidden"
                 aria-label="Close menu"
                 onClick={() => setIsMobileMenuOpen(false)}
               />
               <motion.nav
                 id="mobile-nav-menu"
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-                className="fixed inset-x-0 top-16 bottom-0 z-[101] overflow-y-auto border-b border-border bg-background md:hidden"
+                initial={{ opacity: 0, x: 24, scale: 0.98 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: 24, scale: 0.98 }}
+                transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+                className="fixed top-[4.25rem] right-3 z-[101] flex w-[min(17.5rem,calc(100vw-1.5rem))] max-h-[min(28rem,calc(100dvh-5.5rem))] flex-col overflow-y-auto rounded-2xl border border-border bg-background/95 shadow-2xl backdrop-blur-lg md:hidden"
                 aria-label="Mobile navigation"
               >
-                <div className="space-y-1 px-4 py-6 pb-8">
+                <div className="space-y-0.5 p-4">
                   {navItems.map((item) => (
                     <Link
                       key={item.name}
                       href={item.href}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="block py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                      className="block rounded-lg px-2 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
                     >
                       {item.name}
                     </Link>
                   ))}
                   <div
-                    className="space-y-3 border-t border-border pt-3"
+                    className="mt-2 space-y-2.5 border-t border-border pt-3"
                     data-no-translate
                   >
                     <ThemeToggleRow onToggle={() => setIsMobileMenuOpen(false)} />
