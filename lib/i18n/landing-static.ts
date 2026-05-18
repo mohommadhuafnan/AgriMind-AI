@@ -27,6 +27,11 @@ const LANDING: Partial<Record<SupportedLanguage, Record<string, string>>> = {
     "Your AI Farming Partner": "ඔබේ AI ගොවි සහකාර",
     "From Seed To Harvest": "බීජයේ සිට අස්වැන්න දක්වා",
     "AI-Powered Farming Assistant": "AI බලගැන්වූ ගොවි සහායක",
+    "AI for South Asia": "දකුණු ආසියාව සඳහා AI",
+    "Built for South Asia": "දකුණු ආසියාව සඳහා නිර්මාණය කළ",
+    "15+ Languages": "භාෂා 15+",
+    "4 Languages": "භාෂා 4",
+    "Sinhala · Tamil · Hindi · English": "සිංහල · දෙමළ · හින්දි · ඉංග්‍රීසි",
     "Watch Demo": "ඩෙමෝ නරඹන්න",
     "Active Farmers": "සක්‍රිය ගොවීන්",
     "Accuracy Rate": "නිරවද්‍යතා අනුපාතය",
@@ -43,6 +48,10 @@ const LANDING: Partial<Record<SupportedLanguage, Record<string, string>>> = {
       "සිංහල, දෙමළ හෝ ඉංග්‍රීසියෙන් කතා කරන්න — Valsea ඔබේ හඬ ලියා තබා, OpenAI පිළිතුරු දෙයි.",
     "AgriMind AI helps Sri Lankan farmers with crop disease detection, multilingual voice support, and smart farming guidance. Understands Asian accented speech — Singlish, Chinglish, Sichuanese, Vietnamese, Bahasa, Thai, Tamil, and more.":
       "AgriMind AI ශ්‍රී ලංකාවේ ගොවීන්ට බෝග රෝග හඳුනාගැනීම, බහුභාෂා හඬ සහාය සහ ස්මාර්ට් ගොවි මාර්ගෝපදේශනය සපයයි. ආසියානු උච්චාරණ සහිත කථනය අවබෝධ කරයි — Singlish, Chinglish, Sichuanese, Vietnamese, Bahasa, Thai, Tamil ආදිය.",
+    "AgriMind AI helps farmers across South Asia with crop disease detection, voice support in Sinhala, Tamil, Hindi, and English, and smart farming guidance tailored to local seasons and crops.":
+      "AgriMind AI දකුණු ආසියාව පුරා ගොවීන්ට බෝග රෝග හඳුනාගැනීම, සිංහල, දෙමළ, හින්දි සහ ඉංග්‍රීසි හඬ සහාය සහ දේශීය සෘතුවලට ගැලපෙන ස්මාර්ට් ගොවි මාර්ගෝපදේශනය සපයයි.",
+    "Speak in Sinhala, Tamil, Hindi, or English — voice transcription and natural speech replies built for farmers across South Asia.":
+      "සිංහල, දෙමළ, හින්දි හෝ ඉංග්‍රීසියෙන් කතා කරන්න — දකුණු ආසියාව පුරා ගොවීන්ට හඬ පිටපත් සහ ස්වාභාවික පිළිතුරු.",
     "My tomato leaves are turning yellow with brown spots":
       "මගේ තක්කාලි කොළ කහ පැහැයට හැරෙමින් දුඹුරු ලුණු තිබේ",
     "Based on your description, this appears to be": "ඔබේ විස්තරය අනුව, මෙය විය හැක්කේ",
@@ -75,6 +84,11 @@ const LANDING: Partial<Record<SupportedLanguage, Record<string, string>>> = {
     "Your AI Farming Partner": "உங்கள் AI விவசாய கூட்டாளர்",
     "From Seed To Harvest": "விதையிலிருந்து அறுவடை வரை",
     "AI-Powered Farming Assistant": "AI இயங்கும் விவசாய உதவியாளர்",
+    "AI for South Asia": "தெற்கு ஆசியாவிற்கான AI",
+    "Built for South Asia": "தெற்கு ஆசியாவிற்காக",
+    "15+ Languages": "15+ மொழிகள்",
+    "4 Languages": "4 மொழிகள்",
+    "Sinhala · Tamil · Hindi · English": "சிங்களம் · தமிழ் · ஹிந்தி · ஆங்கிலம்",
     "Watch Demo": "டெமோவைப் பார்க்க",
     "Active Farmers": "செயலில் உள்ள விவசாயிகள்",
     "Accuracy Rate": "துல்லிய விகிதம்",
@@ -91,6 +105,10 @@ const LANDING: Partial<Record<SupportedLanguage, Record<string, string>>> = {
       "சிங்களம், தமிழ் அல்லது ஆங்கிலத்தில் பேசுங்கள் — Valsea உங்கள் குரலை எழுத்துபெயர்க்கிறது, OpenAI பதிலளிக்கிறது.",
     "AgriMind AI helps Sri Lankan farmers with crop disease detection, multilingual voice support, and smart farming guidance. Understands Asian accented speech — Singlish, Chinglish, Sichuanese, Vietnamese, Bahasa, Thai, Tamil, and more.":
       "AgriMind AI இலங்கை விவசாயிகளுக்கு பயிர் நோய் கண்டறிதல், பலமொழி குரல் ஆதரவு மற்றும் ஸ்மார்ட் விவசாய வழிகாட்டுதல் வழங்குகிறது. ஆசிய உச்சரிப்பு குரல்களைப் புரிந்துகொள்கிறது — Singlish, Chinglish, Sichuanese, Vietnamese, Bahasa, Thai, Tamil முதலியன.",
+    "AgriMind AI helps farmers across South Asia with crop disease detection, voice support in Sinhala, Tamil, Hindi, and English, and smart farming guidance tailored to local seasons and crops.":
+      "AgriMind AI தெற்கு ஆசியா முழுவதும் விவசாயிகளுக்கு பயிர் நோய் கண்டறிதல், சிங்களம், தமிழ், ஹிந்தி, ஆங்கில குரல் ஆதரவு மற்றும் உள்ளூர் பருவங்களுக்கு ஏற்ற ஸ்மார்ட் வழிகாட்டுதல்.",
+    "Speak in Sinhala, Tamil, Hindi, or English — voice transcription and natural speech replies built for farmers across South Asia.":
+      "சிங்களம், தமிழ், ஹிந்தி அல்லது ஆங்கிலத்தில் பேசுங்கள் — தெற்கு ஆசிய விவசாயிகளுக்கான குரல் பதில்கள்.",
     "My tomato leaves are turning yellow with brown spots":
       "என் தக்காளி இலைகள் பழுப்பு புள்ளிகளுடன் மஞ்சளாக மாறுகின்றன",
     "Based on your description, this appears to be": "உங்கள் விளக்கத்தின்படி, இது",

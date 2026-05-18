@@ -33,7 +33,7 @@ export function CTASection() {
                 Ready To Transform Your Farm?
               </h2>
               <p className="text-lg text-white/80 max-w-xl">
-                Join thousands of Sri Lankan farmers already using AgriMind AI 
+                Join farmers across South Asia already using AgriMind AI
                 to grow healthier crops and increase their income.
               </p>
             </div>
@@ -56,9 +56,14 @@ export function CTASection() {
                 className="gap-2 text-base border-white/30 text-white hover:bg-white/10"
                 asChild
               >
-                <Link href="#demo">
+                <a
+                  href="https://youtu.be/8wbQq9DXgls"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Watch AgriMind AI demo on YouTube"
+                >
                   Watch Demo
-                </Link>
+                </a>
               </Button>
             </div>
           </div>

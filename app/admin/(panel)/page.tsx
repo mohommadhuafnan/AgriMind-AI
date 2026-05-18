@@ -10,6 +10,8 @@ import {
   SeverityPieChart,
   DistrictBarChart,
 } from "@/components/admin/admin-charts"
+import { AnimatedStatValue } from "@/components/ui/animated-counter"
+import { ScrollReveal } from "@/components/motion/scroll-reveal"
 
 export default function AdminDashboardPage() {
   const { data, loading, error } = useAdminStats()
@@ -82,7 +84,9 @@ export default function AdminDashboardPage() {
               <CardContent className="flex items-start justify-between p-5">
                 <div>
                   <p className="text-sm text-muted-foreground">{stat.title}</p>
-                  <p className="mt-1 text-3xl font-bold">{stat.value}</p>
+                  <p className="mt-1 text-3xl font-bold">
+                    <AnimatedStatValue display={stat.value} />
+                  </p>
                   <p className="mt-1 text-xs text-muted-foreground">{stat.sub}</p>
                 </div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">

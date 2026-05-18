@@ -38,7 +38,7 @@ export function StoriesSection() {
             Farmer Success Stories
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Real results from farmers across Sri Lanka
+            Real results from farmers across the region
           </p>
         </motion.div>
 

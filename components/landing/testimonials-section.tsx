@@ -33,10 +33,11 @@ const testimonials = [
   },
   {
     name: "Priya Fernando",
-    location: "Kurunegala",
+    location: "Kurunegala, Sri Lanka",
     role: "Coconut Farmer",
     image: "/testimonials/farmer4.jpg",
-    quote: "Finally, technology that actually helps village farmers! The Sinhala support and simple interface make it easy for anyone to use.",
+    quote:
+      "Finally, technology that helps village farmers! Sinhala voice support and a simple interface anyone can use.",
     rating: 5,
     crop: "Coconut",
   },
@@ -62,8 +63,8 @@ export function TestimonialsSection() {
             <span className="gradient-text">10,000+ Farmers</span>
           </h2>
           <p className="text-lg text-muted-foreground">
-            Hear from farmers across Sri Lanka who have transformed their farming 
-            with AgriMind AI.
+            Hear from farmers across South Asia who have transformed
+            their farming with AgriMind AI.
           </p>
         </motion.div>
 

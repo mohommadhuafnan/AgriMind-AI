@@ -11,6 +11,7 @@ import {
   Camera,
   Mic,
   LineChart,
+  ShoppingBag,
   CloudSun,
   Bell,
   Settings,
@@ -47,6 +48,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   history: FileText,
   voice: Mic,
   market: LineChart,
+  sell: ShoppingBag,
   weather: CloudSun,
   chat: MessageSquare,
   reminders: Bell,
@@ -59,6 +61,7 @@ const TYPING_PHRASE_KEYS: UiCatalogKey[] = [
   "search.phrase.disease",
   "search.phrase.voice",
   "search.phrase.market",
+  "search.phrase.sell",
 ]
 
 type DashboardGlobalSearchProps = {

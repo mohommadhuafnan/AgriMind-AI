@@ -1,6 +1,5 @@
 "use client"
 
-import { motion } from "framer-motion"
 import {
   Sprout,
   AlertTriangle,
@@ -21,6 +20,8 @@ import {
   DiagnosisActivityChart,
 } from "@/components/dashboard/charts/dashboard-charts"
 import { DashboardPrimaryActions } from "@/components/dashboard/dashboard-primary-actions"
+import { ScrollReveal } from "@/components/motion/scroll-reveal"
+import { AnimatedStatValue } from "@/components/ui/animated-counter"
 import { useLanguage } from "@/contexts/language-context"
 import { getGreetingKey } from "@/lib/datetime/greeting"
 import { formatDistanceToNow } from "date-fns"
@@ -47,6 +48,7 @@ export default function DashboardPage() {
       change: `${cropStats.healthy ?? 0} healthy`,
       icon: Sprout,
       color: "bg-primary",
+      href: "/dashboard/crops",
     },
     {
       title: "Active Alerts",
@@ -54,6 +56,10 @@ export default function DashboardPage() {
       change: `${cropStats.warning ?? 0} crops need attention`,
       icon: AlertTriangle,
       color: "bg-accent",
+      href:
+        Number(cropStats.warning ?? 0) > 0
+          ? "/dashboard/crops"
+          : "/dashboard/reminders",
     },
     {
       title: "AI Diagnoses",
@@ -61,6 +67,7 @@ export default function DashboardPage() {
       change: "Total reports",
       icon: TrendingUp,
       color: "bg-agri-teal",
+      href: "/dashboard/diagnosis/history",
     },
     {
       title: "Weather",
@@ -68,6 +75,7 @@ export default function DashboardPage() {
       change: weather.condition ?? "—",
       icon: CloudSun,
       color: "bg-agri-teal-light",
+      href: "/dashboard/weather",
     },
   ]
 
@@ -81,11 +89,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl border border-border bg-gradient-to-br from-primary/5 via-background to-background p-4 sm:p-5"
-      >
+      <ScrollReveal className="rounded-2xl border border-border bg-gradient-to-br from-primary/5 via-background to-background p-4 sm:p-5">
         <div className="min-w-0 space-y-1">
           <h1 className="text-xl font-bold text-foreground sm:text-2xl lg:text-3xl">
             {t(getGreetingKey())}, {firstName}!
@@ -94,166 +98,181 @@ export default function DashboardPage() {
             {t("dashboard.welcomeSubtitle")}
           </p>
         </div>
-      </motion.div>
+      </ScrollReveal>
 
-      <DashboardPrimaryActions />
+      <ScrollReveal delay={0.05}>
+        <DashboardPrimaryActions />
+      </ScrollReveal>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => (
-          <motion.div
-            key={stat.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.08 }}
-          >
-            <Card>
-              <CardContent className="p-5">
-                <motion.div className="flex items-start justify-between">
+          <ScrollReveal key={stat.title} delay={index * 0.08}>
+            <Link
+              href={stat.href}
+              className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              aria-label={`${stat.title}: ${stat.value}. ${stat.change}`}
+            >
+              <Card className="transition-all duration-200 group-hover:border-primary/25 group-hover:shadow-md">
+                <CardContent className="p-5">
+                <div className="flex items-start justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">{stat.title}</p>
-                    <p className="text-2xl font-bold mt-1">{stat.value}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{stat.change}</p>
+                    <p className="mt-1 text-2xl font-bold">
+                      <AnimatedStatValue display={stat.value} />
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">{stat.change}</p>
                   </div>
-                  <div className={`h-10 w-10 rounded-lg ${stat.color} flex items-center justify-center`}>
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-105 ${stat.color}`}
+                  >
                     <stat.icon className="h-5 w-5 text-primary-foreground" />
                   </div>
-                </motion.div>
-              </CardContent>
-            </Card>
-          </motion.div>
+                </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </ScrollReveal>
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        <motion.div
-          initial={{ opacity: 0, x: -16 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.45, delay: 0.15, ease: "easeOut" }}
-        >
-          <Card className="overflow-hidden">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-agri-teal" aria-hidden />
-                Crop Health
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CropHealthChart data={healthTrend} />
-            </CardContent>
-          </Card>
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, x: 16 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.45, delay: 0.22, ease: "easeOut" }}
-        >
-          <Card className="overflow-hidden">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-agri-teal-light" aria-hidden />
-                Diagnosis Activity
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DiagnosisActivityChart data={diagnosisTrend} />
-            </CardContent>
-          </Card>
-        </motion.div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <ScrollReveal delay={0.12}>
+          <Link
+            href="/dashboard/crops"
+            className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            aria-label="Crop Health chart — view all crops"
+          >
+            <Card className="overflow-hidden transition-all duration-200 group-hover:border-primary/25 group-hover:shadow-md">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <span className="h-2 w-2 rounded-full bg-agri-teal" aria-hidden />
+                  Crop Health
+                  <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CropHealthChart data={healthTrend} />
+              </CardContent>
+            </Card>
+          </Link>
+        </ScrollReveal>
+        <ScrollReveal delay={0.18}>
+          <Link
+            href="/dashboard/diagnosis/history"
+            className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            aria-label="Diagnosis Activity chart — view diagnosis history"
+          >
+            <Card className="overflow-hidden transition-all duration-200 group-hover:border-primary/25 group-hover:shadow-md">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <span className="h-2 w-2 rounded-full bg-agri-teal-light" aria-hidden />
+                  Diagnosis Activity
+                  <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <DiagnosisActivityChart data={diagnosisTrend} />
+              </CardContent>
+            </Card>
+          </Link>
+        </ScrollReveal>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">My Crops</CardTitle>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/dashboard/crops">
-                View All <ArrowRight className="h-4 w-4 ml-1" />
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {recentCrops.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">No crops yet</p>
-                <Button asChild>
-                  <Link href="/dashboard/crops/new">
-                    <Plus className="h-4 w-4 mr-2" /> Add First Crop
-                  </Link>
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {recentCrops.map((crop) => (
-                  <Link
-                    key={String(crop._id)}
-                    href={`/dashboard/crops/${crop._id}`}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                  >
-                    <div>
-                      <p className="font-medium">{String(crop.name)}</p>
-                      <p className="text-sm text-muted-foreground capitalize">
-                        {String(crop.cropType)} · {String(crop.stage)}
-                      </p>
-                    </div>
-                    <span className="text-sm font-semibold text-primary">
-                      {Number(crop.health)}%
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <div className="space-y-6">
-          <Card>
+      <ScrollReveal delay={0.1}>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <Card className="lg:col-span-2">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">Upcoming Tasks</CardTitle>
-              <Bell className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {reminders.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No upcoming reminders</p>
-              ) : (
-                reminders.map((r) => (
-                  <div key={String(r._id)} className="p-2 rounded-lg bg-muted/50">
-                    <p className="text-sm font-medium">{String(r.title)}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(String(r.dueDate)).toLocaleDateString()}
-                    </p>
-                  </div>
-                ))
-              )}
-              <Button variant="outline" size="sm" className="w-full" asChild>
-                <Link href="/dashboard/reminders">Manage Reminders</Link>
+              <CardTitle className="text-lg">My Crops</CardTitle>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/dashboard/crops">
+                  View All <ArrowRight className="ml-1 h-4 w-4" />
+                </Link>
               </Button>
+            </CardHeader>
+            <CardContent>
+              {recentCrops.length === 0 ? (
+                <div className="py-8 text-center">
+                  <p className="mb-4 text-muted-foreground">No crops yet</p>
+                  <Button asChild>
+                    <Link href="/dashboard/crops/new">
+                      <Plus className="mr-2 h-4 w-4" /> Add First Crop
+                    </Link>
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {recentCrops.map((crop) => (
+                    <Link
+                      key={String(crop._id)}
+                      href={`/dashboard/crops/${crop._id}`}
+                      className="flex items-center justify-between rounded-lg bg-muted/50 p-3 transition-colors hover:bg-muted"
+                    >
+                      <div>
+                        <p className="font-medium">{String(crop.name)}</p>
+                        <p className="text-sm capitalize text-muted-foreground">
+                          {String(crop.cropType)} · {String(crop.stage)}
+                        </p>
+                      </div>
+                      <span className="text-sm font-semibold text-primary">
+                        {Number(crop.health)}%
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Recent Alerts</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {recentAlerts.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No alerts yet</p>
-              ) : (
-                recentAlerts.map((a, i) => (
-                  <div key={i} className="flex gap-2 p-2 rounded-lg bg-muted/50">
-                    <AlertTriangle className="h-4 w-4 text-accent shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm">{a.message}</p>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-lg">Upcoming Tasks</CardTitle>
+                <Bell className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {reminders.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No upcoming reminders</p>
+                ) : (
+                  reminders.map((r) => (
+                    <div key={String(r._id)} className="rounded-lg bg-muted/50 p-2">
+                      <p className="text-sm font-medium">{String(r.title)}</p>
                       <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(a.time), { addSuffix: true })}
+                        {new Date(String(r.dueDate)).toLocaleDateString()}
                       </p>
                     </div>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
+                  ))
+                )}
+                <Button variant="outline" size="sm" className="w-full" asChild>
+                  <Link href="/dashboard/reminders">Manage Reminders</Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Recent Alerts</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {recentAlerts.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No alerts yet</p>
+                ) : (
+                  recentAlerts.map((a, i) => (
+                    <div key={i} className="flex gap-2 rounded-lg bg-muted/50 p-2">
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                      <div>
+                        <p className="text-sm">{a.message}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(a.time), { addSuffix: true })}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
+      </ScrollReveal>
     </div>
   )
 }

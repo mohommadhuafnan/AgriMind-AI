@@ -38,7 +38,7 @@ export function PricingSection() {
           </h2>
           <p className="text-lg text-muted-foreground">
             Start with a 7-day free trial. Upgrade when you need unlimited AI diagnosis,
-            voice help in your language, and market tools — priced for Sri Lanka.
+            voice help in your language, and market tools — affordable across the region.
           </p>
         </motion.div>
 
@@ -150,8 +150,9 @@ export function PricingSection() {
           viewport={{ once: true }}
           className="mt-10 text-center text-sm text-muted-foreground max-w-2xl mx-auto"
         >
-          All plans include secure login, crop tracking, and AI tools built for Sri Lankan
-          farmers. Prices in LKR. Cancel anytime on paid plans. Need help choosing?{" "}
+          All plans include secure login, crop tracking, and AI tools built for
+          farmers across South Asia. Prices in LKR. Cancel anytime on paid
+          plans. Need help choosing?{" "}
           <Link
             href="https://wa.me/94772117131"
             className="font-medium text-primary hover:underline"

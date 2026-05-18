@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { motion } from "framer-motion"
 import { Camera, Sparkles, FileText, Bell, CheckCircle } from "lucide-react"

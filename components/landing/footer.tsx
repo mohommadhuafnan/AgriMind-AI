@@ -51,8 +51,8 @@ export function Footer() {
                 className="mb-4 [&_span]:text-sidebar-foreground [&_.text-primary]:text-sidebar-primary"
               />
               <p className="text-sidebar-foreground/70 mb-6 max-w-xs">
-                Your AI farming partner from seed to harvest. Empowering Sri Lankan 
-                farmers with intelligent agriculture technology.
+                Your AI farming partner from seed to harvest. Empowering farmers
+                across South Asia with intelligent agriculture technology.
               </p>
               <div className="space-y-2 text-sm text-sidebar-foreground/70">
                 <div className="flex items-center gap-2">
@@ -65,7 +65,7 @@ export function Footer() {
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
-                  <span>Colombo, Sri Lanka</span>
+                  <span>Serving South Asia</span>
                 </div>
               </div>
             </div>

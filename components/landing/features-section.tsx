@@ -26,7 +26,8 @@ const features = [
   {
     icon: Mic,
     title: "Voice Assistant",
-    description: "Speak naturally in Sinhala, Tamil, or English. Get voice responses and guidance.",
+    description:
+      "Speak naturally in Sinhala, Tamil, Hindi, or English. Get voice replies and guidance for South Asian farms.",
     color: "bg-accent",
   },
   {

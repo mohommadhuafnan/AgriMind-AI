@@ -10,6 +10,8 @@ type VoiceWaveAnimationProps = {
   className?: string
   /** 0–100 optional level boost for listening mode */
   level?: number
+  /** compact = landing language cards */
+  size?: "default" | "compact"
 }
 
 export function VoiceWaveAnimation({
@@ -17,17 +19,22 @@ export function VoiceWaveAnimation({
   barCount = 28,
   className,
   level = 50,
+  size = "default",
 }: VoiceWaveAnimationProps) {
   const isSpeaking = variant === "speaking"
+  const isCompact = size === "compact"
   const barColor = isSpeaking
-    ? "bg-primary"
+    ? isCompact
+      ? "bg-primary/70"
+      : "bg-primary"
     : "bg-destructive"
 
   return (
     <div
       className={cn(
-        "flex items-center justify-center gap-[3px]",
-        isSpeaking ? "h-16" : "h-12",
+        "flex items-center justify-center",
+        isCompact ? "h-8 gap-0.5" : "gap-[3px]",
+        !isCompact && (isSpeaking ? "h-16" : "h-12"),
         className
       )}
       role="img"
@@ -36,15 +43,19 @@ export function VoiceWaveAnimation({
       {Array.from({ length: barCount }).map((_, i) => {
         const center = barCount / 2
         const dist = Math.abs(i - center) / center
-        const baseMax = isSpeaking ? 48 : 32
-        const minH = isSpeaking ? 6 : 4
+        const baseMax = isCompact ? 20 : isSpeaking ? 48 : 32
+        const minH = isCompact ? 6 : isSpeaking ? 6 : 4
         const maxH =
           baseMax * (1 - dist * 0.45) + (isSpeaking ? 0 : (level % 30))
 
         return (
           <motion.div
             key={i}
-            className={cn("w-1 rounded-full sm:w-1.5", barColor)}
+            className={cn(
+              "w-1 rounded-full",
+              !isCompact && "sm:w-1.5",
+              barColor
+            )}
             animate={{
               height: isSpeaking
                 ? [minH, maxH, minH + 4, maxH * 0.85, minH]

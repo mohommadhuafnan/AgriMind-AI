@@ -38,8 +38,9 @@ export function CropsSection() {
             <span className="gradient-text">All Major Crops</span>
           </h2>
           <p className="text-lg text-muted-foreground">
-            AgriMind AI is trained on Sri Lankan crop varieties and local farming conditions.
-            Get accurate diagnosis and treatment for these crops and more.
+            AgriMind AI covers tropical and staple crops common across South Asia —
+            rice, coconut, chili, vegetables, and more — with local treatment
+            guidance for your region.
           </p>
         </motion.div>
 

@@ -6,6 +6,7 @@ import { DashboardGlobalSearch } from "@/components/dashboard/dashboard-global-s
 import { NotificationDropdown } from "@/components/dashboard/notification-dropdown"
 import { DashboardProfileMenu } from "@/components/dashboard/dashboard-profile-menu"
 import { LiveDateTime } from "@/components/dashboard/live-datetime"
+import { ScrollHideBar } from "@/components/motion/scroll-hide-bar"
 import { LanguagePicker } from "@/components/i18n/language-picker"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
 import { Button } from "@/components/ui/button"
@@ -45,7 +46,6 @@ export function DashboardHeader({ onOpenMobileMenu }: DashboardHeaderProps) {
       data-no-translate
       className="sticky top-0 z-30 w-full border-b border-border bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur supports-[backdrop-filter]:bg-background/80"
     >
-      {/* Mobile & tablet: compact two-row header */}
       <div className="lg:hidden">
         <div className="flex h-12 items-center gap-2 px-3">
           <Button
@@ -69,15 +69,13 @@ export function DashboardHeader({ onOpenMobileMenu }: DashboardHeaderProps) {
           <HeaderActions compact />
         </div>
 
-        <div className="border-t border-border/60 bg-muted/25 px-3 py-2">
-          <LiveDateTime variant="mobile-bar" />
-        </div>
-        <div className="border-t border-border/60 px-3 py-2.5">
-          <DashboardGlobalSearch variant="mobile" />
-        </div>
+        <ScrollHideBar className="border-t border-border/60 bg-muted/25">
+          <div className="px-3 py-2">
+            <LiveDateTime variant="mobile-bar" />
+          </div>
+        </ScrollHideBar>
       </div>
 
-      {/* Laptop & desktop: classic single-row toolbar */}
       <div className="mx-auto hidden h-14 w-full max-w-[1440px] items-center gap-3 px-4 sm:h-16 sm:gap-4 sm:px-5 lg:flex lg:px-6">
         <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
           <LiveDateTime

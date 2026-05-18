@@ -15,7 +15,7 @@ const faqs = [
   },
   {
     q: "Which languages are supported?",
-    a: "AgriMind AI supports Sinhala, Tamil, and English for both text and voice interactions.",
+    a: "AgriMind supports Sinhala, Tamil, Hindi, and English for both text and voice — with more South Asian languages coming soon.",
   },
   {
     q: "Is AgriMind AI free to use?",

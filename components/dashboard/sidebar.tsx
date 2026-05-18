@@ -18,6 +18,7 @@ import {
   ChevronRight,
   LogOut,
   FileText,
+  ShoppingBag,
 } from "lucide-react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -38,6 +39,7 @@ const NAV_ICONS = {
   history: FileText,
   voice: Mic,
   market: LineChart,
+  sell: ShoppingBag,
   weather: CloudSun,
   chat: MessageSquare,
   reminders: Bell,

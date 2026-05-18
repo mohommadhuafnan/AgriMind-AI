@@ -15,6 +15,7 @@ import {
   User,
   FileText,
   LogOut,
+  ShoppingBag,
   type LucideIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -35,6 +36,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   history: FileText,
   voice: Mic,
   market: LineChart,
+  sell: ShoppingBag,
   weather: CloudSun,
   chat: MessageSquare,
   reminders: Bell,

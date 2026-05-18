@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { AppProviders } from "@/components/providers/app-providers"
+import { THEME_INIT_SCRIPT } from "@/lib/theme/init-script"
 import "./globals.css"
 
 const geistSans = Geist({
@@ -17,21 +18,26 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "AgriMind AI - Your AI Farming Partner From Seed To Harvest",
   description:
-    "AgriMind AI is an intelligent farming assistant for Sri Lankan farmers. Get AI-powered crop disease detection, multilingual voice support, smart farming guidance, and market intelligence.",
+    "AgriMind AI is an intelligent farming assistant for South Asia. AI crop disease detection, voice support in Sinhala, Tamil, Hindi, and English, smart farming guidance, and market intelligence.",
   keywords: [
     "agriculture",
     "farming",
     "AI",
     "crop disease detection",
+    "South Asia",
     "Sri Lanka",
+    "India",
     "smart farming",
     "multilingual",
+    "Sinhala",
+    "Tamil",
+    "Hindi",
   ],
   authors: [{ name: "AgriMind AI" }],
   openGraph: {
     title: "AgriMind AI - Your AI Farming Partner",
     description:
-      "An intelligent farming assistant available 24/7 for Sri Lankan farmers.",
+      "An intelligent farming assistant available 24/7 for farmers across South Asia.",
     type: "website",
     images: [{ url: "/agrimind-logo.png", alt: "AgriMind AI" }],
   },
@@ -62,6 +68,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
+          suppressHydrationWarning
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
       >

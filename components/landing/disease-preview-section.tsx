@@ -33,11 +33,17 @@ export function DiseasePreviewSection() {
           className="glass rounded-3xl p-8 max-w-3xl mx-auto"
         >
           <div className="grid sm:grid-cols-2 gap-8">
-            <div className="aspect-square rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center border-2 border-dashed border-primary/30">
-              <div className="text-center p-6">
-                <Camera className="h-12 w-12 text-primary mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">Crop image analysis preview</p>
-              </div>
+            <div className="relative aspect-square overflow-hidden rounded-2xl border border-primary/20 bg-black shadow-lg">
+              <video
+                className="h-full w-full object-cover"
+                src="/videos/crop-diagnosis-preview.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+                aria-label="Crop image analysis demo"
+              />
             </div>
             <div className="space-y-5">
               <div>

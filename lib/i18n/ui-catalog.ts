@@ -18,6 +18,8 @@ export const UI_CATALOG = {
 
   "nav.market": "Market Prices",
 
+  "nav.sellProduct": "Sell Products",
+
   "nav.weather": "Weather",
 
   "nav.chat": "AI Chat",
@@ -45,6 +47,23 @@ export const UI_CATALOG = {
   "search.phrase.voice": "Open voice assistant...",
 
   "search.phrase.market": "Search market prices...",
+
+  "search.phrase.sell": "Sell your harvest...",
+
+  "sell.title": "Sell Products",
+
+  "sell.subtitle": "List your harvest and reach buyers across South Asia.",
+
+  "sell.comingSoon": "Coming soon",
+
+  "sell.message":
+    "We are preparing product selling tools for AgriMind AI farmers. You will be able to list crops, set prices, and connect with buyers — all in one place.",
+
+  "sell.updateNote": "This feature will be updated in a future release. Thank you for your patience.",
+
+  "sell.useMarket": "Until then, use Market Prices to see wholesale rates and plan the best time to sell.",
+
+  "sell.viewMarket": "View market prices",
 
   "header.notifications": "Notifications",
 
@@ -222,6 +241,8 @@ export const SHELL_NAV_ITEMS = [
   { key: "nav.voice" as const, href: "/dashboard/voice", icon: "voice" },
 
   { key: "nav.market" as const, href: "/dashboard/market", icon: "market" },
+
+  { key: "nav.sellProduct" as const, href: "/dashboard/sell", icon: "sell" },
 
   { key: "nav.weather" as const, href: "/dashboard/weather", icon: "weather" },
 
