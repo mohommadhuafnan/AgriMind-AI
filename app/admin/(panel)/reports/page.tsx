@@ -1,7 +1,8 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { Loader2 } from "lucide-react"
+import { Loader2, Sprout } from "lucide-react"
+import { AdminPageHeader } from "@/components/admin/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Select,
@@ -60,12 +61,13 @@ export default function AdminReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Crop Reports</h1>
-        <p className="text-muted-foreground">AI disease diagnosis reports across the platform</p>
-      </div>
+      <AdminPageHeader
+        title="Crop Reports"
+        description="AI disease diagnosis reports across the platform."
+        icon={Sprout}
+      />
 
-      <Card>
+      <Card className="transition-all duration-200 hover:border-primary/25 hover:shadow-md">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Diagnosis reports</CardTitle>
           <Select

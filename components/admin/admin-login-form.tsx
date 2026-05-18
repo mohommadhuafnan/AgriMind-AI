@@ -61,12 +61,12 @@ export function AdminLoginForm() {
       animate={{ opacity: 1, y: 0 }}
       className="w-full max-w-md"
     >
-      <div className="rounded-3xl border border-border bg-card p-8 shadow-2xl">
+      <div className="glass rounded-3xl border border-border bg-card/95 p-8 shadow-2xl">
         <motion.div
-          className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10"
+          className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10"
           whileHover={{ scale: 1.05 }}
         >
-          <Shield className="h-7 w-7 text-destructive" />
+          <Shield className="h-7 w-7 text-primary" />
         </motion.div>
 
         <div className="mb-8 text-center">

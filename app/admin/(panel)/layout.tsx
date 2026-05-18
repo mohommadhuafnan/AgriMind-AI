@@ -1,18 +1,9 @@
-import { AdminSidebar } from "@/components/admin/admin-sidebar"
-import { AdminHeader } from "@/components/admin/admin-header"
+import { AdminShell } from "@/components/admin/admin-shell"
 
 export default function AdminPanelLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  return (
-    <div className="min-h-screen bg-muted/30">
-      <AdminSidebar />
-      <div className="min-w-0 lg:pl-64">
-        <AdminHeader />
-        <main className="p-4 sm:p-6">{children}</main>
-      </div>
-    </div>
-  )
+  return <AdminShell>{children}</AdminShell>
 }

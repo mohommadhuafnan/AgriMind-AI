@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react"
 import { Brain, Loader2, AlertTriangle, MessageSquare } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { AdminPageHeader } from "@/components/admin/admin-page-header"
+import { cn } from "@/lib/utils"
 import { formatDistanceToNow } from "date-fns"
 
 interface AiMonitorData {
@@ -50,25 +52,54 @@ export default function AdminAiMonitorPage() {
   }
 
   const metrics = [
-    { label: "Voice sessions today", value: data?.sessionsToday ?? 0, icon: Brain },
-    { label: "Total voice messages", value: data?.totalVoiceMessages ?? 0, icon: MessageSquare },
-    { label: "High severity diagnoses", value: data?.highSeverityCount ?? 0, icon: AlertTriangle },
-    { label: "Active price alerts", value: data?.activePriceAlerts ?? 0, icon: AlertTriangle },
+    {
+      label: "Voice sessions today",
+      value: data?.sessionsToday ?? 0,
+      icon: Brain,
+      color: "bg-primary text-primary-foreground",
+    },
+    {
+      label: "Total voice messages",
+      value: data?.totalVoiceMessages ?? 0,
+      icon: MessageSquare,
+      color: "bg-agri-teal text-white",
+    },
+    {
+      label: "High severity diagnoses",
+      value: data?.highSeverityCount ?? 0,
+      icon: AlertTriangle,
+      color: "bg-destructive text-destructive-foreground",
+    },
+    {
+      label: "Active price alerts",
+      value: data?.activePriceAlerts ?? 0,
+      icon: AlertTriangle,
+      color: "bg-accent text-accent-foreground",
+    },
   ]
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">AI Monitor</h1>
-        <p className="text-muted-foreground">Voice assistant usage and diagnosis oversight</p>
-      </div>
+      <AdminPageHeader
+        title="AI Monitor"
+        description="Voice assistant usage and diagnosis oversight across the platform."
+        icon={Brain}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {metrics.map((m) => (
-          <Card key={m.label}>
+          <Card
+            key={m.label}
+            className="transition-all duration-200 hover:border-primary/25 hover:shadow-md"
+          >
             <CardContent className="flex items-center gap-4 p-5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                <m.icon className="h-5 w-5 text-primary" />
+              <div
+                className={cn(
+                  "flex h-10 w-10 items-center justify-center rounded-lg",
+                  m.color
+                )}
+              >
+                <m.icon className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{m.value}</p>
@@ -80,7 +111,7 @@ export default function AdminAiMonitorPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
+        <Card className="transition-all duration-200 hover:border-primary/25 hover:shadow-md">
           <CardHeader>
             <CardTitle>Recent voice conversations</CardTitle>
           </CardHeader>
@@ -104,7 +135,7 @@ export default function AdminAiMonitorPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="transition-all duration-200 hover:border-primary/25 hover:shadow-md">
           <CardHeader>
             <CardTitle>Recent diagnoses</CardTitle>
           </CardHeader>

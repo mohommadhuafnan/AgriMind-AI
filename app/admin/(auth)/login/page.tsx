@@ -9,7 +9,7 @@ export default function AdminLoginPage() {
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background">
       <AnimatedBackground />
       <div
-        className="absolute inset-0 bg-gradient-to-br from-destructive/5 via-background to-background"
+        className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-background"
         aria-hidden
       />
       <Suspense

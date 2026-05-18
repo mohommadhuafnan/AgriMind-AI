@@ -14,6 +14,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { AdminPageHeader } from "@/components/admin/admin-page-header"
+import { Users } from "lucide-react"
 import { toast } from "sonner"
 import { formatDistanceToNow } from "date-fns"
 
@@ -72,12 +74,13 @@ export default function AdminFarmersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Farmers</h1>
-        <p className="text-muted-foreground">Manage registered farmer accounts</p>
-      </div>
+      <AdminPageHeader
+        title="Farmers"
+        description="Manage registered farmer accounts across the platform."
+        icon={Users}
+      />
 
-      <Card>
+      <Card className="transition-all duration-200 hover:border-primary/25 hover:shadow-md">
         <CardHeader className="flex flex-row items-center justify-between gap-4">
           <CardTitle>All farmers</CardTitle>
           <div className="flex gap-2 max-w-sm w-full">

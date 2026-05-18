@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Loader2 } from "lucide-react"
+import { Loader2, Bell } from "lucide-react"
+import { AdminPageHeader } from "@/components/admin/admin-page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatDistanceToNow } from "date-fns"
 
@@ -36,13 +37,14 @@ export default function AdminNotificationsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Notifications</h1>
-        <p className="text-muted-foreground">Platform-wide notification feed</p>
-      </div>
+      <AdminPageHeader
+        title="Notifications"
+        description="Platform-wide notification feed and unread counts."
+        icon={Bell}
+      />
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
+        <Card className="transition-all duration-200 hover:border-primary/25 hover:shadow-md">
           <CardContent className="p-5">
             <p className="text-sm text-muted-foreground">Unread</p>
             <p className="text-3xl font-bold">{unreadTotal}</p>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Loader2, Shield } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { AdminPageHeader } from "@/components/admin/admin-page-header"
 import {
   Table,
   TableBody,
@@ -37,14 +38,13 @@ export default function AdminOfficersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Officers & Admins</h1>
-        <p className="text-muted-foreground">
-          Promote users via <code className="text-xs">scripts/create-admin.ts</code>
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Officers & Admins"
+        description="Staff accounts with admin access. Promote users via scripts/create-admin.ts."
+        icon={Shield}
+      />
 
-      <Card>
+      <Card className="transition-all duration-200 hover:border-primary/25 hover:shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
