@@ -3,6 +3,8 @@
 import Link from "next/link"
 import { FileText, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useLanguage } from "@/contexts/language-context"
+import { getLanguageDisplayLabel } from "@/lib/i18n/languages"
 import { buildDiagnosisShareUrl } from "@/services/whatsapp.service"
 import type { CropDiagnosisResult } from "@/types/ai"
 
@@ -17,14 +19,16 @@ export function DiagnosisReportActions({
   cropType,
   diagnosis,
 }: DiagnosisReportActionsProps) {
+  const { language } = useLanguage()
   const whatsappUrl = buildDiagnosisShareUrl({ cropType, diagnosis, reportId })
+  const pdfHref = `/api/diagnosis/${reportId}/pdf?lang=${encodeURIComponent(language)}`
 
   return (
     <div className="flex flex-wrap gap-2">
       <Button variant="outline" size="sm" className="gap-2" asChild>
-        <a href={`/api/diagnosis/${reportId}/pdf`} target="_blank" rel="noopener noreferrer">
+        <a href={pdfHref} target="_blank" rel="noopener noreferrer">
           <FileText className="h-4 w-4" />
-          Download PDF
+          Download PDF ({getLanguageDisplayLabel(language)})
         </a>
       </Button>
       <Button variant="outline" size="sm" className="gap-2" asChild>

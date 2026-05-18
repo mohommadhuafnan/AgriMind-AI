@@ -13,6 +13,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useLanguage } from "@/contexts/language-context"
 import { getLanguageDisplayLabel } from "@/lib/i18n/languages"
+import { LanguageMenuHeader } from "@/components/i18n/language-menu-header"
 import { cn } from "@/lib/utils"
 import type { SupportedLanguage } from "@/types"
 
@@ -57,6 +58,7 @@ export function LanguagePicker({
         className={cn("w-56 p-0", contentClassName)}
         data-no-translate
       >
+        <LanguageMenuHeader />
         <ScrollArea className="h-[min(70vh,420px)]">
           <div className="p-1">
             {languageGroups.map((group, gi) => (

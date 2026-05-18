@@ -15,6 +15,8 @@ import {
   getLanguageDisplayLabel,
   getLanguagesByRegion,
 } from "@/lib/i18n/languages"
+import { LanguageMenuHeader } from "@/components/i18n/language-menu-header"
+import { TRANSLATION_SERVICE_COPY } from "@/lib/i18n/translation-services"
 import { cn } from "@/lib/utils"
 import type { SupportedLanguage } from "@/types"
 
@@ -62,10 +64,7 @@ export function AsianLanguageSelect({
         className="w-64 p-0"
         data-no-translate
       >
-        <div className="border-b border-border px-3 py-2">
-          <p className="text-xs font-semibold text-foreground">{headerTitle}</p>
-          <p className="text-[11px] text-muted-foreground">{headerSubtitle}</p>
-        </div>
+        <LanguageMenuHeader title={headerTitle} subtitle={headerSubtitle} />
         <ScrollArea className="h-[min(70vh,380px)]">
           <div className="p-1">
             {languageGroups.map((group, gi) => (

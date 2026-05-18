@@ -11,14 +11,16 @@ export function useAiChat(language: SupportedLanguage = "en") {
   const sendMessage = useCallback(
     async (
       message: string,
-      history: ChatMessageInput[] = []
+      history: ChatMessageInput[] = [],
+      replyLanguage?: SupportedLanguage
     ): Promise<string | null> => {
+      const lang = replyLanguage ?? language
       setIsLoading(true)
       try {
         const res = await fetch("/api/ai/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message, language, history }),
+          body: JSON.stringify({ message, language: lang, history }),
         })
         const json = await res.json()
         if (!res.ok) {

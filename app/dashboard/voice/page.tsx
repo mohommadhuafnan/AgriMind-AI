@@ -14,6 +14,7 @@ import {
   Loader2,
   Globe,
   Square,
+  ChevronDown,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LiveVoiceTextarea } from "@/components/dashboard/voice/live-voice-textarea"
@@ -37,6 +38,7 @@ import { VoiceMessageActions } from "@/components/dashboard/voice/voice-message-
 import { VoiceLanguageSelect } from "@/components/dashboard/voice/voice-language-select"
 import { WhatsAppSupportButton } from "@/components/dashboard/whatsapp-support-button"
 import { getVoiceWelcomeMessage } from "@/lib/voice/welcome"
+import { hasSpeakableSentence } from "@/lib/voice/speech-chunks"
 import { prefetchSpeech } from "@/lib/voice/tts"
 import { toast } from "sonner"
 import type { SupportedLanguage } from "@/types"
@@ -50,6 +52,15 @@ import {
   type VoiceLanguagePreference,
 } from "@/lib/i18n/languages"
 import { detectUserLanguage } from "@/lib/voice/detect-language"
+import {
+  getStoredVoiceLanguageMode,
+  setStoredVoiceLanguageMode,
+} from "@/lib/voice/language-preference"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 
 const quickPrompts = [
   "My tomato leaves are turning yellow",
@@ -70,7 +81,9 @@ function toHistory(messages: VoiceUiMessage[]): ChatMessageInput[] {
 
 export default function VoiceAssistantPage() {
   const [languageMode, setLanguageMode] =
-    useState<VoiceLanguagePreference>(AUTO_DETECT_LANGUAGE)
+    useState<VoiceLanguagePreference>(() => getStoredVoiceLanguageMode())
+  const [languageOptionsOpen, setLanguageOptionsOpen] = useState(false)
+  const detectToastShownRef = useRef(false)
   const [activeLanguage, setActiveLanguage] = useState<SupportedLanguage>("en")
   const [lastDetected, setLastDetected] = useState<SupportedLanguage | null>(
     null
@@ -94,6 +107,7 @@ export default function VoiceAssistantPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const assistantIdRef = useRef<string | null>(null)
+  const speechPrefetchRef = useRef(false)
 
   const scrollToLatest = useCallback((behavior: ScrollBehavior = "auto") => {
     requestAnimationFrame(() => {
@@ -213,10 +227,11 @@ export default function VoiceAssistantPage() {
     setFollowUps([])
 
     const turnLanguage = await resolveTurnLanguage(userText)
-    if (isAutoDetectLanguage(languageMode)) {
+    if (isAutoDetectLanguage(languageMode) && !detectToastShownRef.current) {
+      detectToastShownRef.current = true
       toast.message(
-        `Detected ${getLanguageDisplayLabel(turnLanguage)} — replying in your language`,
-        { duration: 2800 }
+        `Speaking ${getLanguageDisplayLabel(turnLanguage)} — replies will match your language`,
+        { duration: 3200 }
       )
     }
     const userMsg: VoiceUiMessage = {
@@ -231,6 +246,7 @@ export default function VoiceAssistantPage() {
 
     const assistantId = `a-${Date.now()}`
     assistantIdRef.current = assistantId
+    speechPrefetchRef.current = false
     setMessages((prev) => [
       ...prev,
       {
@@ -253,10 +269,20 @@ export default function VoiceAssistantPage() {
             m.id === assistantId ? { ...m, content, streaming } : m
           )
         )
-        if (!streaming && content.trim() && !isMuted) {
+        if (
+          streaming &&
+          content.trim() &&
+          !isMuted &&
+          !speechPrefetchRef.current &&
+          hasSpeakableSentence(content)
+        ) {
+          speechPrefetchRef.current = true
           prefetchSpeech(content, turnLanguage)
         }
         if (!streaming) {
+          if (content.trim() && !isMuted) {
+            prefetchSpeech(content, turnLanguage)
+          }
           scrollToLatest("auto")
         }
       },
@@ -390,6 +416,11 @@ export default function VoiceAssistantPage() {
     setShowHistory(false)
   }
 
+  const replyLanguage = isAutoDetectLanguage(languageMode)
+    ? activeLanguage
+    : languageMode
+  const motherTongueVoice = replyLanguage !== "en"
+
   const statusText = isTranscribing
     ? "Finalizing your voice to text…"
     : isPartialTranscribing
@@ -407,7 +438,9 @@ export default function VoiceAssistantPage() {
         : isSpeaking
           ? "AI voice playing — tap Stop voice to interrupt"
           : isProcessing
-            ? "AgriMind is thinking… voice starts quickly when the answer is ready"
+            ? motherTongueVoice
+              ? `AgriMind is thinking… ${getLanguageDisplayLabel(replyLanguage)} voice will play when ready`
+              : "AgriMind is thinking… voice starts quickly when the answer is ready"
             : "Tap green mic · speak · your words type live in the box · tap red when done · Send"
 
   return (
@@ -437,23 +470,51 @@ export default function VoiceAssistantPage() {
           </div>
           <h1 className="text-2xl font-bold text-foreground">Voice Assistant</h1>
           <p className="text-muted-foreground">
-            Speak in any language — AgriMind detects it and replies in the same
-            language
+            Speak in your mother tongue — Tamil, Sinhala, Hindi, or any language.
+            VALSEA.ai listens; AgriMind answers in the same language. No need to
+            pick a language first.
             {lastDetected && isAutoDetectLanguage(languageMode) && (
-              <span className="text-primary">
-                {" "}
-                (last detected: {getLanguageDisplayLabel(lastDetected)})
+              <span className="mt-1 block font-medium text-primary">
+                Now using: {getLanguageDisplayLabel(lastDetected)}
               </span>
             )}
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-end">
-          <VoiceLanguageSelect
-            value={languageMode}
-            onChange={setLanguageMode}
-            detectedLanguage={lastDetected}
-            disabled={isProcessing || isListening}
-          />
+          <Collapsible
+            open={languageOptionsOpen}
+            onOpenChange={setLanguageOptionsOpen}
+          >
+            <CollapsibleTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1"
+                disabled={isProcessing || isListening}
+              >
+                <Globe className="h-4 w-4" />
+                {isAutoDetectLanguage(languageMode)
+                  ? "Auto language"
+                  : getLanguageDisplayLabel(languageMode)}
+                <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2 flex justify-end">
+              <VoiceLanguageSelect
+                value={languageMode}
+                onChange={(mode) => {
+                  setLanguageMode(mode)
+                  setStoredVoiceLanguageMode(mode)
+                  if (isAutoDetectLanguage(mode)) {
+                    detectToastShownRef.current = false
+                  }
+                }}
+                detectedLanguage={lastDetected}
+                disabled={isProcessing || isListening}
+              />
+            </CollapsibleContent>
+          </Collapsible>
           <Button
             variant="outline"
             size="sm"

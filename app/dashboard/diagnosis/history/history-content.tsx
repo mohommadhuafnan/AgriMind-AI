@@ -26,6 +26,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useDiagnosisHistory } from "@/hooks/use-diagnosis-history"
+import { useLanguage } from "@/contexts/language-context"
+import { getLanguageDisplayLabel } from "@/lib/i18n/languages"
 import { buildDiagnosisShareUrl } from "@/services/whatsapp.service"
 import type { CropDiagnosisResult } from "@/types/ai"
 import { format } from "date-fns"
@@ -39,6 +41,7 @@ const severityColor = {
 export function DiagnosisHistoryContent() {
   const searchParams = useSearchParams()
   const highlightId = searchParams.get("id")
+  const { language } = useLanguage()
   const { reports, loading, deletingId, downloadPdf, deleteReport } =
     useDiagnosisHistory()
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
@@ -148,7 +151,7 @@ export function DiagnosisHistoryContent() {
                       size="sm"
                       className="gap-2"
                       disabled={isDeleting}
-                      onClick={() => downloadPdf(id)}
+                      onClick={() => downloadPdf(id, language)}
                     >
                       <FileText className="h-4 w-4" />
                       PDF

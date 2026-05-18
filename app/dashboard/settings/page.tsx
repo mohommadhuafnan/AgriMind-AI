@@ -9,6 +9,7 @@ import { useTheme } from "@/components/theme-provider"
 import { useProfile } from "@/hooks/use-profile"
 import { WhatsAppSupportButton } from "@/components/dashboard/whatsapp-support-button"
 import Link from "next/link"
+import { ValseaStatusCard } from "@/components/i18n/valsea-status-card"
 
 type Prefs = {
   email: boolean
@@ -108,13 +109,17 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      <ValseaStatusCard />
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Globe className="h-5 w-5" />
             Language
           </CardTitle>
-          <CardDescription>Change language on your Profile page.</CardDescription>
+          <CardDescription>
+            Change language from the header globe icon or on your Profile page.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Button variant="outline" asChild>

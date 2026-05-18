@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
+import type { SupportedLanguage } from "@/types"
 
 export function useDiagnosisHistory() {
   const [reports, setReports] = useState<Record<string, unknown>[]>([])
@@ -24,8 +25,9 @@ export function useDiagnosisHistory() {
     fetchHistory()
   }, [fetchHistory])
 
-  const downloadPdf = (reportId: string) => {
-    window.open(`/api/diagnosis/${reportId}/pdf`, "_blank")
+  const downloadPdf = (reportId: string, language?: SupportedLanguage) => {
+    const qs = language ? `?lang=${encodeURIComponent(language)}` : ""
+    window.open(`/api/diagnosis/${reportId}/pdf${qs}`, "_blank")
   }
 
   const deleteReport = async (reportId: string) => {

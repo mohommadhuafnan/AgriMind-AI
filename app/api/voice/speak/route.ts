@@ -11,7 +11,10 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { text } = body as { text?: string; language?: SupportedLanguage }
+    const { text, language } = body as {
+      text?: string
+      language?: SupportedLanguage
+    }
 
     if (!text?.trim()) {
       return NextResponse.json(
@@ -20,7 +23,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const audio = await synthesizeSpeech(text.trim())
+    const audio = await synthesizeSpeech(text.trim(), language)
 
     return new NextResponse(new Uint8Array(audio), {
       headers: {

@@ -1,11 +1,25 @@
-import { getAsianLanguage } from "@/lib/i18n/languages"
+import {
+  ensureVoicesLoaded,
+  hasNativeBrowserVoice,
+  pickVoiceForLanguage,
+  speechLangTag,
+} from "@/lib/voice/browser-voices"
+import {
+  defaultSpeakStrategy,
+  type SpeakStrategy,
+} from "@/lib/voice/tts-policy"
+import {
+  extractFirstSpeechChunk,
+  prepareSpeechText,
+  splitSpeechChunks,
+} from "@/lib/voice/speech-chunks"
 import type { SupportedLanguage } from "@/types"
 
-const MAX_TTS_CHARS = 4096
+export type { SpeakStrategy }
 
-function speechLang(code: SupportedLanguage): string {
-  return getAsianLanguage(code)?.bcp47 ?? "en-US"
-}
+const MAX_TTS_CHARS = 4096
+/** Smaller API chunks = faster first audio for Tamil/Sinhala/Hindi */
+const SERVER_CHUNK_CHARS = 420
 
 function truncateForTts(text: string): string {
   const trimmed = text.trim()
@@ -23,6 +37,10 @@ type SpeakCallbacks = {
   onError?: () => void
 }
 
+type SpeakOptions = {
+  strategy?: SpeakStrategy
+}
+
 type TtsCacheEntry = {
   key: string
   objectUrl: string
@@ -30,24 +48,27 @@ type TtsCacheEntry = {
 
 let activeAudio: HTMLAudioElement | null = null
 let activeObjectUrl: string | null = null
+let activeUtterance: SpeechSynthesisUtterance | null = null
+let chunkCancelRequested = false
 let ttsCache: TtsCacheEntry | null = null
 let ttsInflight: { key: string; promise: Promise<TtsCacheEntry | null> } | null =
   null
 
 function revokeActiveAudio() {
+  chunkCancelRequested = true
   if (activeAudio) {
     activeAudio.pause()
     activeAudio.src = ""
     activeAudio = null
   }
-  if (
-    activeObjectUrl &&
-    activeObjectUrl !== ttsCache?.objectUrl
-  ) {
+  if (activeObjectUrl && activeObjectUrl !== ttsCache?.objectUrl) {
     URL.revokeObjectURL(activeObjectUrl)
   }
   activeObjectUrl = null
-  window.speechSynthesis?.cancel()
+  if (typeof window !== "undefined" && window.speechSynthesis) {
+    window.speechSynthesis.cancel()
+  }
+  activeUtterance = null
 }
 
 function clearTtsCache() {
@@ -105,58 +126,154 @@ async function loadTtsCache(
   }
 }
 
-/** Start loading voice audio while the reply is still finishing */
 export function prefetchSpeech(
   text: string,
   language: SupportedLanguage
 ): void {
   if (typeof window === "undefined" || !text.trim()) return
-  const key = ttsCacheKey(text, language)
+  const first = extractFirstSpeechChunk(text)
+  const full = prepareSpeechText(text)
+  const target = first ?? full.slice(0, 400)
+  const key = ttsCacheKey(target, language)
   if (ttsCache?.key === key || ttsInflight?.key === key) return
-  void loadTtsCache(text, language)
+  void loadTtsCache(target, language)
 }
 
-export function pickVoiceForLanguage(
-  language: SupportedLanguage
-): SpeechSynthesisVoice | null {
-  if (typeof window === "undefined" || !window.speechSynthesis) return null
+function splitServerTtsChunks(plain: string): string[] {
+  const sentences = plain
+    .split(/(?<=[.!?।॥])\s+/)
+    .map((p) => p.trim())
+    .filter(Boolean)
 
-  const voices = window.speechSynthesis.getVoices()
-  const target = speechLang(language)
-  const langPrefix = target.split("-")[0] ?? "en"
+  const chunks: string[] = []
+  let buffer = ""
 
-  const preferred =
-    voices.find((v) => v.lang === target) ??
-    voices.find((v) => v.lang.startsWith(langPrefix)) ??
-    voices.find((v) => v.lang.startsWith("en"))
+  const flush = () => {
+    const t = buffer.trim()
+    if (t) chunks.push(t)
+    buffer = ""
+  }
 
-  return preferred ?? voices[0] ?? null
+  for (const part of sentences.length ? sentences : [plain]) {
+    if (!buffer) buffer = part
+    else if (`${buffer} ${part}`.length <= SERVER_CHUNK_CHARS) {
+      buffer = `${buffer} ${part}`
+    } else {
+      flush()
+      buffer = part
+    }
+    if (buffer.length >= SERVER_CHUNK_CHARS) flush()
+  }
+  flush()
+
+  return chunks.length ? chunks : [plain]
 }
 
-function speakWithBrowser(
+function speakChunkWithBrowser(
+  chunk: string,
+  language: SupportedLanguage,
+  voice: SpeechSynthesisVoice | null
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      reject(new Error("no speech synthesis"))
+      return
+    }
+
+    const synth = window.speechSynthesis
+    const utterance = new SpeechSynthesisUtterance(chunk)
+    utterance.lang = speechLangTag(language)
+    utterance.rate = language === "en" ? 0.95 : 0.9
+    utterance.pitch = 1
+    if (voice) utterance.voice = voice
+
+    let settled = false
+    const finish = () => {
+      if (settled) return
+      settled = true
+      resolve()
+    }
+
+    activeUtterance = utterance
+    utterance.onend = finish
+    utterance.onerror = () => {
+      if (chunkCancelRequested) finish()
+      else reject(new Error("utterance error"))
+    }
+
+    synth.speak(utterance)
+  })
+}
+
+function startSpeechKeepAlive(): () => void {
+  if (typeof window === "undefined" || !window.speechSynthesis) {
+    return () => {}
+  }
+  const synth = window.speechSynthesis
+  const id = window.setInterval(() => {
+    if (chunkCancelRequested || !synth.speaking) return
+    synth.pause()
+    synth.resume()
+  }, 10_000)
+  return () => window.clearInterval(id)
+}
+
+/** Browser TTS — best for English when a native voice exists */
+function speakInstant(
   text: string,
   language: SupportedLanguage,
   callbacks?: SpeakCallbacks
-): void {
-  if (typeof window === "undefined" || !window.speechSynthesis) {
-    callbacks?.onError?.()
-    return
+): () => void {
+  if (typeof window === "undefined") {
+    return () => {}
   }
 
-  window.speechSynthesis.cancel()
-  const utterance = new SpeechSynthesisUtterance(truncateForTts(text))
-  utterance.lang = speechLang(language)
-  utterance.rate = language === "en" ? 0.95 : 0.9
-  utterance.pitch = 1
+  chunkCancelRequested = false
+  const prepared = prepareSpeechText(text)
+  const chunks = splitSpeechChunks(prepared)
+  if (chunks.length === 0) {
+    callbacks?.onError?.()
+    return () => {}
+  }
 
-  const voice = pickVoiceForLanguage(language)
-  if (voice) utterance.voice = voice
+  let started = false
+  let stopKeepAlive: (() => void) | null = null
 
-  utterance.onstart = () => callbacks?.onStart?.()
-  utterance.onend = () => callbacks?.onEnd?.()
-  utterance.onerror = () => callbacks?.onError?.()
+  const cancel = () => {
+    chunkCancelRequested = true
+    stopKeepAlive?.()
+    stopKeepAlive = null
+    revokeActiveAudio()
+  }
 
-  window.speechSynthesis.speak(utterance)
+  void (async () => {
+    const voices = await ensureVoicesLoaded()
+    const voice = pickVoiceForLanguage(voices, language)
+
+    stopKeepAlive = startSpeechKeepAlive()
+    try {
+      for (const chunk of chunks) {
+        if (chunkCancelRequested) break
+        if (!started) {
+          started = true
+          callbacks?.onStart?.()
+        }
+        await speakChunkWithBrowser(chunk, language, voice)
+      }
+      if (!chunkCancelRequested) {
+        callbacks?.onEnd?.()
+      }
+    } catch {
+      if (!chunkCancelRequested) {
+        callbacks?.onError?.()
+      }
+    } finally {
+      stopKeepAlive?.()
+      stopKeepAlive = null
+    }
+  })()
+
+  return cancel
 }
 
 function playAudioUrl(
@@ -165,6 +282,7 @@ function playAudioUrl(
   ownsBlobUrl = true
 ): Promise<boolean> {
   revokeActiveAudio()
+  chunkCancelRequested = false
   if (ownsBlobUrl) {
     activeObjectUrl = url
   }
@@ -209,38 +327,31 @@ function playAudioUrl(
   })
 }
 
-async function speakWithOpenAI(
-  text: string,
-  language: SupportedLanguage,
-  callbacks?: SpeakCallbacks,
-  signal?: AbortSignal
-): Promise<boolean> {
-  const cached = await loadTtsCache(text, language, signal)
-  if (cached) {
-    return playAudioUrl(cached.objectUrl, callbacks, false)
-  }
-
-  const blob = await fetchTtsBlob(text, language, signal)
-  if (!blob) return false
-
-  const url = URL.createObjectURL(blob)
-  return playAudioUrl(url, callbacks, true)
+function playAudioUrlAwaitEnd(url: string, ownsBlobUrl: boolean): Promise<boolean> {
+  return new Promise((resolve) => {
+    void playAudioUrl(
+      url,
+      {
+        onEnd: () => resolve(true),
+        onError: () => resolve(false),
+      },
+      ownsBlobUrl
+    )
+  })
 }
 
 /**
- * Speak text — uses prefetched audio when available for faster playback.
+ * OpenAI TTS in chunks — correct Tamil/Sinhala/Hindi; first chunk plays sooner.
  */
-export function speakText(
+function speakNatural(
   text: string,
   language: SupportedLanguage,
   callbacks?: SpeakCallbacks
 ): () => void {
-  if (typeof window === "undefined" || !text.trim()) {
-    return () => {}
-  }
-
   const controller = new AbortController()
   let cancelled = false
+  const prepared = prepareSpeechText(text)
+  const apiChunks = splitServerTtsChunks(prepared)
 
   const cancel = () => {
     cancelled = true
@@ -249,48 +360,86 @@ export function speakText(
   }
 
   void (async () => {
-    try {
-      const ok = await speakWithOpenAI(
-        text,
-        language,
-        {
-          onStart: () => {
-            if (!cancelled) callbacks?.onStart?.()
-          },
-          onEnd: () => {
-            if (!cancelled) callbacks?.onEnd?.()
-          },
-          onError: () => {
-            if (!cancelled) callbacks?.onError?.()
-          },
-        },
-        controller.signal
-      )
+    let started = false
 
-      if (cancelled) return
+    for (const chunk of apiChunks) {
+      if (cancelled) break
 
-      if (!ok) {
-        speakWithBrowser(text, language, callbacks)
+      let blob: Blob | null = null
+      try {
+        blob = await fetchTtsBlob(chunk, language, controller.signal)
+      } catch {
+        blob = null
       }
-    } catch {
-      if (!cancelled) {
-        speakWithBrowser(text, language, callbacks)
+
+      if (!blob) {
+        if (!cancelled) {
+          const voices = await ensureVoicesLoaded()
+          if (hasNativeBrowserVoice(voices, language)) {
+            speakInstant(prepared, language, callbacks)
+          } else {
+            callbacks?.onError?.()
+          }
+        }
+        return
       }
+
+      const url = URL.createObjectURL(blob)
+      if (!started) {
+        started = true
+        callbacks?.onStart?.()
+      }
+
+      const ok = await playAudioUrlAwaitEnd(url, true)
+      if (!ok && !cancelled) {
+        callbacks?.onError?.()
+        return
+      }
+    }
+
+    if (!cancelled && started) {
+      callbacks?.onEnd?.()
+    } else if (!cancelled && !started) {
+      speakInstant(prepared, language, callbacks)
     }
   })()
 
   return cancel
 }
 
+/**
+ * Speak reply aloud.
+ * English: fast browser voice. Tamil/Sinhala/Hindi/etc.: OpenAI mother-tongue TTS.
+ */
+export function speakText(
+  text: string,
+  language: SupportedLanguage,
+  callbacks?: SpeakCallbacks,
+  options?: SpeakOptions
+): () => void {
+  if (typeof window === "undefined" || !text.trim()) {
+    return () => {}
+  }
+
+  const prepared = prepareSpeechText(text)
+  if (!prepared) {
+    return () => {}
+  }
+
+  const strategy = options?.strategy ?? defaultSpeakStrategy(language)
+
+  if (strategy === "instant") {
+    return speakInstant(prepared, language, callbacks)
+  }
+
+  return speakNatural(prepared, language, callbacks)
+}
+
 export function stopSpeaking(): void {
   revokeActiveAudio()
 }
 
-/** Preload browser voices for fallback */
 export function preloadVoices(): void {
   if (typeof window === "undefined") return
-  window.speechSynthesis?.getVoices()
-  window.speechSynthesis?.addEventListener("voiceschanged", () => {
-    window.speechSynthesis?.getVoices()
-  })
+  void ensureVoicesLoaded()
 }

@@ -25,6 +25,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { AsianLanguageSelect } from "@/components/i18n/asian-language-select"
+import { AUTO_DETECT_LANGUAGE } from "@/lib/i18n/languages"
+import { detectUserLanguage } from "@/lib/voice/detect-language"
 import { useAiChat } from "@/hooks/use-ai-chat"
 import { useVoiceInput } from "@/hooks/use-voice-input"
 import { textForSpeech } from "@/lib/chat/format-message"
@@ -89,7 +91,7 @@ export default function ChatPage() {
     usesValseaVoice,
     startListening,
     stopListening,
-  } = useVoiceInput(language, {
+  } = useVoiceInput(AUTO_DETECT_LANGUAGE, {
     preferValsea: true,
     fasterLiveUpdates: true,
   })
@@ -153,6 +155,15 @@ export default function ChatPage() {
 
       stopVoiceReply()
 
+      let replyLang = language
+      if (options?.fromVoice) {
+        const detected = await detectUserLanguage(trimmed)
+        if (detected !== language) {
+          await setLanguage(detected)
+        }
+        replyLang = detected
+      }
+
       const userMessage: Message = {
         id: Date.now().toString(),
         type: "user",
@@ -169,7 +180,7 @@ export default function ChatPage() {
         }))
 
         void (async () => {
-          const reply = await sendMessage(trimmed, history)
+          const reply = await sendMessage(trimmed, history, replyLang)
           if (!reply) return
 
           const aiId = (Date.now() + 1).toString()
@@ -184,7 +195,7 @@ export default function ChatPage() {
 
           if (voiceRepliesRef.current) {
             const speechText = textForSpeech(reply)
-            prefetchSpeech(speechText, language)
+            prefetchSpeech(speechText, replyLang)
             speakMessage(aiId, reply)
           }
         })()
@@ -194,7 +205,7 @@ export default function ChatPage() {
 
       setInput("")
     },
-    [isTyping, language, sendMessage, speakMessage, stopVoiceReply]
+    [isTyping, language, setLanguage, sendMessage, speakMessage, stopVoiceReply]
   )
 
   const handleMicClick = async () => {

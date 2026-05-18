@@ -14,6 +14,8 @@ import {
   getLanguagesByRegion,
   isSupportedLanguage,
 } from "@/lib/i18n/languages"
+import { LanguageMenuHeader } from "@/components/i18n/language-menu-header"
+import { TRANSLATION_SERVICE_COPY } from "@/lib/i18n/translation-services"
 import type { SupportedLanguage } from "@/types"
 
 const languageGroups = getLanguagesByRegion()
@@ -46,12 +48,10 @@ export function PreferredLanguageSelect({
         className="max-h-[min(70vh,380px)]"
         data-no-translate
       >
-        <div className="border-b border-border px-3 py-2">
-          <p className="text-xs font-semibold text-foreground">VALSEA.ai</p>
-          <p className="text-[11px] text-muted-foreground">
-            15 Asian languages — chat, voice & translations
-          </p>
-        </div>
+        <LanguageMenuHeader
+          title={TRANSLATION_SERVICE_COPY.appLanguageTitle}
+          subtitle={TRANSLATION_SERVICE_COPY.profileLanguageSubtitle}
+        />
         {languageGroups.map((group) => (
           <SelectGroup key={group.region}>
             <SelectLabel className="text-xs text-muted-foreground">
