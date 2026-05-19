@@ -42,7 +42,7 @@ export function DiseasePreviewSection() {
                 muted
                 playsInline
                 preload="metadata"
-                aria-label="Crop image analysis demo"
+                aria-label="Farmer using smartphone for crop disease detection"
               />
             </div>
             <div className="space-y-5">
